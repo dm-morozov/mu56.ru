@@ -4,6 +4,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from .models import Article, Offering, Review
+from .management.commands.seed_editorial import ARTICLES
 
 
 class EditorialTests(TestCase):
@@ -50,7 +51,7 @@ class EditorialTests(TestCase):
         self.assertEqual(article.body, "Текст владельца")
         self.assertFalse(article.is_published)
         self.assertEqual(review.text, "Уточнённый отзыв")
-        self.assertEqual(Article.objects.count(), 3)
+        self.assertEqual(Article.objects.count(), len(ARTICLES))
 
     def test_article_does_not_promote_hidden_offering(self):
         article = Article.objects.get(slug="transformer-doma")

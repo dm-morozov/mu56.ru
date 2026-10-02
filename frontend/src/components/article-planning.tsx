@@ -1,19 +1,22 @@
 import Link from "next/link";
 import { Article } from "@/lib/editorial";
-import { Offering, basePrice, rubles } from "@/lib/types";
+import { Character, Offering, basePrice, rubles } from "@/lib/types";
 import { offeringUrl } from "@/lib/images";
 
 const suggestions: Record<string, string[]> = {
   "transformer-doma": ["bumblebee", "optimus-prime"],
   "kak-vybrat-programmu": ["animation", "sweet-vibe", "full-party"],
   "esli-rebenok-stesnyaetsya": ["animation"],
+  "kak-vybrat-geroya": ["bumblebee", "sweet-vibe", "full-party"],
 };
 
-export function ArticlePlanning({ slug, offerings, articles }: { slug: string; offerings: Offering[]; articles: Article[] }) {
+export function ArticlePlanning({ slug, offerings, articles, characters = [] }: { slug: string; offerings: Offering[]; articles: Article[]; characters?: Character[] }) {
   const programs = (suggestions[slug] || []).map(key => offerings.find(item => item.slug === key && item.availability !== "unavailable"))
     .filter((item): item is Offering => !!item);
   const reading = articles.filter(item => item.slug !== slug).slice(0, 3);
+  const heroes = slug === "kak-vybrat-geroya" ? characters.filter(item => ["spider-man", "ninja-turtle"].includes(item.slug) && item.availability !== "unavailable") : [];
   return <section className="article-planning" aria-label="Программы и материалы по теме">
+    {slug === "kak-vybrat-geroya" && <div className="article-character-links"><h2>Посмотрите реальные образы</h2><p>Откройте страницу героя, чтобы посмотреть костюм и фотографии из доступной галереи.</p>{heroes.map(item => <Link key={item.slug} className="text-link" href={`/characters/${item.slug}`}>{item.name}{item.availability === "check" ? " — доступность уточним" : ""} →</Link>)}<Link className="text-link" href="/characters">Выбрать из всех персонажей →</Link></div>}
     {programs.length > 0 && <><h2>Посмотрите подходящие программы</h2><div className="article-program-links">{programs.map(item => {
       const price = basePrice(item);
       return <Link key={item.slug} href={item.kind === "animation" ? "/animators" : offeringUrl(item.kind, item.slug)}><strong>{item.name}</strong><span>{item.kind === "transformer" ? "Большой герой и второй герой в обычном костюме" : item.kind === "package" ? "Анимация и шоу в одной программе" : "Любимый герой, игры и танцы"}</span><b>{price !== undefined ? rubles(price) : "Стоимость уточним"}</b></Link>;
