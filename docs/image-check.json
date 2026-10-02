@@ -1,0 +1,23 @@
+[
+  {
+    "source": "/media/characters/spider-man.png",
+    "original_bytes": 19731098,
+    "served_bytes": 30186,
+    "width": 384,
+    "reduction_percent": 99.85
+  },
+  {
+    "source": "/media/bumblebee-live.jpg",
+    "original_bytes": 3981688,
+    "served_bytes": 75772,
+    "width": 750,
+    "reduction_percent": 98.1
+  },
+  {
+    "source": "/media/optimus.png",
+    "original_bytes": 1459221,
+    "served_bytes": 27944,
+    "width": 750,
+    "reduction_percent": 98.09
+  }
+]

@@ -1,0 +1,33 @@
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.env
+*.sqlite3
+backend/media/
+backend/staticfiles/
+tmp/
+.local/
+# Исходные материалы с внутренними данными и тяжёлый архив.
+PROJECT_CONTEXT.md
+docs/internal/
+scraper/
+*.pdf
+*.txt
+!requirements.txt
+!backend/requirements.txt
+Дополнительные фото для сайта/
+Персонажи из буклета*/
+.idea/
+.vscode/
+node_modules/
+.next/
+.pnpm-store/
+*.tsbuildinfo
+
+.env.local
+.env.*.local
+.env.*
+!.env.example
+# Старый сайт — отдельный вложенный репозиторий, не часть нового приложения.
+/mu56/

@@ -1,0 +1,59 @@
+{
+  "james-bond": [
+    "/media/gallery/james-bond/1.jpg",
+    "/media/gallery/james-bond/2.jpg"
+  ],
+  "harry-potter": [
+    "/media/gallery/harry-potter/1.jpg",
+    "/media/gallery/harry-potter/2.jpg"
+  ],
+  "new-year-duo": [
+    "/media/gallery/new-year-duo/1.jpg",
+    "/media/gallery/new-year-duo/2.jpg"
+  ],
+  "deadpool": [
+    "/media/gallery/deadpool/1.jpg"
+  ],
+  "kutamba": [
+    "/media/gallery/kutamba/1.jpg",
+    "/media/gallery/kutamba/2.jpg"
+  ],
+  "clown-kesha": [
+    "/media/gallery/clown-kesha/1.jpg",
+    "/media/gallery/clown-kesha/2.jpg"
+  ],
+  "nolik": [
+    "/media/gallery/nolik/1.jpg",
+    "/media/gallery/nolik/2.jpg"
+  ],
+  "jack-sparrow": [
+    "/media/gallery/jack-sparrow/1.jpg",
+    "/media/gallery/jack-sparrow/2.jpg"
+  ],
+  "cat-noir": [
+    "/media/gallery/cat-noir/1.jpg",
+    "/media/gallery/cat-noir/2.jpg"
+  ],
+  "spider-man": [
+    "/media/gallery/spider-man/1.jpg",
+    "/media/gallery/spider-man/2.jpg"
+  ],
+  "ninja-turtle": [
+    "/media/gallery/ninja-turtle/1.jpg",
+    "/media/gallery/ninja-turtle/2.jpg"
+  ],
+  "hatter": [
+    "/media/gallery/hatter/1.jpg",
+    "/media/gallery/hatter/2.jpg"
+  ],
+  "bumblebee": [
+    "/media/bumblebee-live.jpg",
+    "/media/bumblebee-party.jpg"
+  ],
+  "optimus-prime": [
+    "/media/optimus.png"
+  ],
+  "iron-man": [
+    "/media/iron-man.png"
+  ]
+}

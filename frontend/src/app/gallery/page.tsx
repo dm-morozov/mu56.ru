@@ -1,0 +1,5 @@
+import Image from "next/image";
+import { PageIntro } from "@/components/page-intro";
+export const metadata = { title: "Фото праздников", description: "Настоящие фотографии детских праздников «Мира Улыбок» в Оренбурге: трансформеры, персонажи и эмоции гостей.", alternates: { canonical: "/gallery" } };
+const photos = [["bumblebee-live.jpg", "Бамблби и детские впечатления"], ["party-colour.jpg", "Игры с любимыми героями"], ["hatter-live.jpg", "Шляпник на празднике"], ["party-friends.jpg", "Весело всей компании"], ["party-games.jpg", "Праздник в детском саду"], ["bumblebee-party.jpg", "Большие герои на празднике"]];
+export default function GalleryPage() { return <main id="main"><PageIntro title="Вот как это бывает" eyebrow="Наши праздники в фотографиях" description="Костюмы, знакомство с героями, игры и счастливые моменты. Фотографии из нашего архива праздников." /><section className="container inner-content gallery-grid">{photos.map(([file, caption]) => <figure key={file}><Image sizes="(max-width: 600px) 100vw, 600px" src={`/media/${file}`} alt={caption} width="700" height="550" loading="lazy" /><figcaption>{caption}</figcaption></figure>)}</section></main>; }
