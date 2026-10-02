@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 from catalog.models import Character, ContactChannel, Offering, PriceOption
 from .models import Lead
+from .telegram import notification_payload
 
 
 class PublicAPITests(TestCase):
@@ -87,7 +88,20 @@ class PublicAPITests(TestCase):
     def test_package_extra_performer_uses_booklet_rounding(self):
         payload = {**self.payload, "offering": "full-party", "addons": [], "second_performer": True}
         self.assertEqual(self.submit(payload).status_code, 201)
-        self.assertEqual(Lead.objects.get().selection_snapshot["known_program_amount_rub"], 18200)
+        lead = Lead.objects.get()
+        self.assertTrue(lead.second_performer)
+        self.assertTrue(lead.selection_snapshot["second_performer"])
+        self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 18200)
+        self.assertEqual(lead.character.slug, "spider-man")
+        price = lead.offering.prices.get(context="second_performer")
+        price.amount_rub = 9999
+        price.save()
+        lead.refresh_from_db()
+        self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 18200)
+        message = notification_payload(lead, "test-chat")["text"]
+        self.assertIn("Второй аниматор: да", message)
+        self.assertIn("Герой: Человек-паук", message)
+        self.assertIn("Предварительный расчёт: 18 200 ₽", message)
 
     def test_transformer_preview_all_heroes_and_combinations_without_saving(self):
         for hero, base in [("bumblebee", 6200), ("optimus-prime", 6200), ("iron-man", 5800)]:
