@@ -17,6 +17,7 @@ cd C:\GitHub\mu56.ru
 & .\scripts\dev_postgres.ps1 Start
 .\.venv\Scripts\python.exe backend\manage.py migrate
 .\.venv\Scripts\python.exe backend\manage.py seed_catalog
+.\.venv\Scripts\python.exe backend\manage.py seed_offering_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_photos
 .\.venv\Scripts\python.exe backend\manage.py seed_editorial
@@ -34,6 +35,7 @@ cd C:\GitHub\mu56.ru
 $env:DJANGO_USE_SQLITE = '1'
 .\.venv\Scripts\python.exe backend\manage.py migrate
 .\.venv\Scripts\python.exe backend\manage.py seed_catalog
+.\.venv\Scripts\python.exe backend\manage.py seed_offering_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_photos
 .\.venv\Scripts\python.exe backend\manage.py seed_editorial
@@ -66,6 +68,7 @@ $dbPassword = Read-Host 'Пароль пользователя PostgreSQL' -AsSe
 $env:PGPASSWORD = [System.Net.NetworkCredential]::new('', $dbPassword).Password
 .\.venv\Scripts\python.exe backend\manage.py migrate
 .\.venv\Scripts\python.exe backend\manage.py seed_catalog
+.\.venv\Scripts\python.exe backend\manage.py seed_offering_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_content
 .\.venv\Scripts\python.exe backend\manage.py seed_character_photos
 .\.venv\Scripts\python.exe backend\manage.py seed_editorial
@@ -82,7 +85,7 @@ $env:PGPASSWORD = [System.Net.NetworkCredential]::new('', $dbPassword).Password
 .\.venv\Scripts\python.exe backend\manage.py test catalog leads
 ```
 
-57 тестов проверяют каталог, цены и состав программ, повторное наполнение, галереи, статьи, сохранение заявок, CSRF, ограничения доступа и очередь уведомлений. 2 октября тесты и сборка прошли также в восстановленной копии с заново установленными зависимостями.
+59 тестов проверяют каталог, цены и состав программ, повторное наполнение, галереи, статьи, сохранение заявок, CSRF, ограничения доступа и очередь уведомлений. 2 октября в восстановленной копии с заново установленными зависимостями прошли 57 тестов и сборка; два последующих теста проверяют наполнение описаний услуг. Управление описаниями: [docs/OFFERING_CONTENT.md](docs/OFFERING_CONTENT.md).
 
 Контракт API и формат заявки — в `docs/API.md`. Заявки обрабатываются в админке; уведомления получает Дмитрий в Telegram при работающем обработчике. Настройка: [docs/TELEGRAM.md](docs/TELEGRAM.md). Секреты хранятся вне Git.
 
