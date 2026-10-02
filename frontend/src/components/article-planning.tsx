@@ -8,6 +8,7 @@ const suggestions: Record<string, string[]> = {
   "kak-vybrat-programmu": ["animation", "sweet-vibe", "full-party"],
   "esli-rebenok-stesnyaetsya": ["animation"],
   "kak-vybrat-geroya": ["bumblebee", "sweet-vibe", "full-party"],
+  "igry-shou-i-tort": ["sweet-vibe", "ice-breath", "full-party"],
 };
 
 export function ArticlePlanning({ slug, offerings, articles, characters = [] }: { slug: string; offerings: Offering[]; articles: Article[]; characters?: Character[] }) {
