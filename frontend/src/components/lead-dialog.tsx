@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Phone, X } from "lucide-react";
 import { HeroPicker } from "./hero-picker";
 import { ShowAddon } from "./show-addon";
+import { PhoneInput } from "./phone-input";
 import { close, useAppDispatch, useSelection } from "./store-provider";
 import { Offering, basePrice, rubles } from "@/lib/types";
 
@@ -94,7 +95,7 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
       <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">Поможем выбрать программу и согласуем свободную дату.</p>
       <form onSubmit={submit}>
         <fieldset className="lead-fields" disabled={busy}>
-        <div className="form-row"><label>Ваше имя<input name="name" autoComplete="given-name" maxLength={100} placeholder="Как к вам обращаться" /></label><label>Телефон<input name="phone" type="tel" autoComplete="tel" required maxLength={20} placeholder="+7 ___ ___-__-__" /></label></div>
+        <div className="form-row"><label>Ваше имя<input name="name" autoComplete="given-name" maxLength={100} placeholder="Как к вам обращаться" /></label><label>Телефон<PhoneInput /></label></div>
         <div className="form-row"><label>Как связаться<select name="contact_method"><option value="phone">Позвонить</option><option value="telegram">Telegram</option><option value="max">MAX</option></select></label><label>Дата праздника<input name="event_date" type="date" /></label></div>
         <label>{transformer ? "Большой герой и программа" : "Программа"}<select name="offering" value={programSlug} onChange={event => { const slug = event.target.value; setProgramSlug(slug); setSecondPerformer(false); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }}><option value="">Пока не знаю — помогите выбрать</option>{offerings.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></label>
         {availableHeroes.length > 0 && <HeroPicker key={`${selection.open}-${programSlug}`} heroes={availableHeroes} value={heroSlug} onChange={setHeroSlug} label={transformer ? "Второй герой (обычный костюм)" : "Герой анимации"} />}
