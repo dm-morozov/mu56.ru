@@ -24,6 +24,7 @@ def selection_item(offering):
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
+    tariff_code = serializers.CharField(required=False, allow_blank=True, max_length=100, write_only=True)
     offering = serializers.SlugRelatedField(
         slug_field="slug", queryset=Offering.objects.filter(is_listed=True).exclude(availability=Availability.UNAVAILABLE),
         required=False, allow_null=True,
@@ -46,7 +47,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         fields = (
             "name", "phone", "contact_method", "messenger_handle", "event_date", "event_time", "child_age",
             "children_count", "location", "comment", "offering", "character", "addons", "second_performer",
-            "data_consent", "website",
+            "data_consent", "website", "tariff_code",
         )
 
     def to_internal_value(self, data):
@@ -85,6 +86,9 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         offering, character, addons = attrs.get("offering"), attrs.get("character"), attrs.get("addons", [])
+        code = attrs.get("tariff_code")
+        if code and (not offering or offering.kind != Offering.Kind.SEASONAL or not offering.prices.filter(code=code, is_confirmed=True).exists()):
+            raise serializers.ValidationError({"tariff_code": "Выберите действующий тариф новогодней программы."})
         if len(addons) > 12 or len({item.pk for item in addons}) != len(addons):
             raise serializers.ValidationError({"addons": "Выберите разные дополнения, не более 12."})
         if offering and any(item.pk == offering.pk for item in addons):
@@ -106,10 +110,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         validated_data.pop("data_consent")
         validated_data.pop("website", None)
         addons = validated_data.pop("addons", [])
+        tariff_code = validated_data.pop("tariff_code", "")
         offering = validated_data.get("offering")
         character = validated_data.get("character")
         known_program_amount = None
         quote = None
+        selected_tariff = None
         if offering:
             try:
                 if offering.kind == Offering.Kind.PACKAGE:
@@ -117,6 +123,10 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 elif offering.kind == Offering.Kind.TRANSFORMER:
                     quote = transformer_quote(offering, [item for item in addons if item.kind == Offering.Kind.SHOW])
                     known_program_amount = quote["amount_rub"]
+                elif offering.kind == Offering.Kind.SEASONAL and tariff_code:
+                    selected_tariff = offering.prices.get(code=tariff_code, is_confirmed=True)
+                    known_program_amount = selected_tariff.amount_rub if not addons else None
+                    quote = {"lines": [{"slug": offering.slug, "name": f"{offering.name} · {selected_tariff.duration_minutes} минут" + (" и комплект звука" if tariff_code == "group-with-sound" else ""), "amount_rub": selected_tariff.amount_rub}]}
             except (ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
                 pass  # Preserve a request even when its exact tariff needs discussion.
         snapshot = {
@@ -125,6 +135,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "addons": [selection_item(item) for item in addons],
             "second_performer": validated_data.get("second_performer", False),
             "known_program_amount_rub": known_program_amount,
+            "selected_tariff": {"code": selected_tariff.code, "duration_minutes": selected_tariff.duration_minutes, "amount_rub": selected_tariff.amount_rub} if selected_tariff else None,
             "price_breakdown": quote["lines"] if quote else [],
             "travel": "Стоимость выезда уточним по адресу",
             "requires_manager_confirmation": True,

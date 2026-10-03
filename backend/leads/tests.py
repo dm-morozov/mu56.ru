@@ -31,6 +31,29 @@ class PublicAPITests(TestCase):
     def submit(self, payload=None):
         return self.client.post("/api/v1/leads/", payload or self.payload, format="json", HTTP_X_CSRFTOKEN=self.token)
 
+    def test_new_year_selected_format_preserves_duration_and_price(self):
+        payload = {**self.payload, "offering": "new-year", "character": None, "addons": [], "tariff_code": "minutes-55"}
+        self.assertEqual(self.submit(payload).status_code, 201)
+        lead = Lead.objects.latest("created_at")
+        self.assertEqual(lead.selection_snapshot["selected_tariff"], {"code": "minutes-55", "duration_minutes": 55, "amount_rub": 6000})
+        self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 6000)
+        tariff = Offering.objects.get(slug="new-year").prices.get(code="minutes-55")
+        tariff.amount_rub = 7000
+        tariff.save()
+        lead.refresh_from_db()
+        self.assertEqual(lead.selection_snapshot["selected_tariff"]["amount_rub"], 6000)
+        self.assertIn("55 минут", notification_payload(lead, 123456)["text"])
+
+    def test_new_year_rejects_retired_format_and_keeps_addons_without_false_total(self):
+        payload = {**self.payload, "offering": "new-year", "character": None, "tariff_code": "minutes-45"}
+        self.assertEqual(self.submit(payload).status_code, 400)
+        payload["tariff_code"] = "group-with-sound"
+        self.assertEqual(self.submit(payload).status_code, 201)
+        lead = Lead.objects.latest("created_at")
+        self.assertEqual(lead.selection_snapshot["selected_tariff"]["amount_rub"], 9000)
+        self.assertIsNone(lead.selection_snapshot["known_program_amount_rub"])
+        self.assertEqual(list(lead.addons.values_list("slug", flat=True)), ["silver"])
+
     def test_catalog_excludes_hidden_offerings_roles_and_draft_prices(self):
         animation = Offering.objects.get(slug="animation")
         hidden = Character.objects.get(slug="spider-man")

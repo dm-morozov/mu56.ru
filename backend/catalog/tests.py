@@ -86,9 +86,9 @@ class CatalogTests(TestCase):
         response = self.client.get(f"/admin/catalog/offering/{package.pk}/change/")
         self.assertContains(response, "Фоновая музыка, без ведущих")
 
-    def test_new_year_has_three_independent_confirmed_tariffs(self):
+    def test_new_year_has_three_home_formats_and_group_format(self):
         tariffs = Offering.objects.get(slug="new-year").prices.filter(is_confirmed=True).order_by("duration_minutes")
-        self.assertEqual(list(tariffs.values_list("duration_minutes", "amount_rub")), [(30, 4500), (45, 5000), (60, 6000)])
+        self.assertEqual(list(tariffs.values_list("duration_minutes", "amount_rub")), [(30, 4500), (40, 5000), (55, 6000), (60, 9000)])
 
     def test_retired_new_year_tariff_is_preserved_but_not_public(self):
         from importlib import import_module

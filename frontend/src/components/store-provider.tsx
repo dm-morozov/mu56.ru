@@ -5,12 +5,13 @@ import { useRef } from "react";
 
 const selection = createSlice({
   name: "selection",
-  initialState: { open: false, offering: "", character: "" },
+  initialState: { open: false, offering: "", character: "", tariff: "" },
   reducers: {
-    choose: (state, action: PayloadAction<{ offering?: string; character?: string }>) => {
+    choose: (state, action: PayloadAction<{ offering?: string; character?: string; tariff?: string }>) => {
       state.open = true;
       state.offering = action.payload.offering || "";
       state.character = action.payload.character || "";
+      state.tariff = action.payload.tariff || "";
     },
     close: state => { state.open = false; },
   },
