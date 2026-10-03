@@ -11,16 +11,12 @@ export function ShowAddon({ show, checked, onChange, price }: {
   price?: string;
 }) {
   const descriptionId = useId();
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [pinned, setPinned] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const open = !dismissed && (hovered || focused || pinned);
+  const [open, setOpen] = useState(false);
 
-  return <div className="show-addon" onPointerLeave={() => setHovered(false)} onKeyDown={event => {
+  return <div className="show-addon" onKeyDown={event => {
     if (event.key === "Escape" && open) {
       event.preventDefault(); event.stopPropagation();
-      setPinned(false); setDismissed(true);
+      setOpen(false);
     }
   }}>
     <div className="show-addon-row">
@@ -31,17 +27,10 @@ export function ShowAddon({ show, checked, onChange, price }: {
           {price && <small>{price}</small>}
         </span>
       </label>
-      <div className="show-addon-info" onPointerEnter={event => {
-        if (event.pointerType === "mouse") { setHovered(true); setDismissed(false); }
-      }}>
+      <div className="show-addon-info">
         <button type="button" className="show-info-button" aria-label={`Описание: ${show.name}`}
           aria-expanded={open} aria-controls={descriptionId}
-          onFocus={() => { setFocused(true); setDismissed(false); }}
-          onBlur={() => { setFocused(false); setPinned(false); }}
-          onClick={() => {
-            if (pinned && !dismissed) { setPinned(false); setDismissed(true); }
-            else { setPinned(true); setDismissed(false); }
-          }}><Info size={18} aria-hidden="true" /></button>
+          onClick={() => setOpen(value => !value)}><Info size={18} aria-hidden="true" /></button>
       </div>
     </div>
     <div id={descriptionId} className="show-addon-description" hidden={!open}>
