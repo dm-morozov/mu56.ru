@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight, Clock3, Mic2, Sparkles } from "lucide-react";
 import { Character, Offering, basePrice, duration, rubles } from "@/lib/types";
 import { characterImage, characterIsPhoto, offeringUrl } from "@/lib/images";
+import { ShowCard } from "./show-card";
 import { ChooseButton } from "./choose-button";
 
 export function CharacterCard({ character, index = 0 }: { character: Character; index?: number }) {
@@ -32,6 +33,7 @@ export function PackageCard({ offering, featured = false }: { offering: Offering
 }
 
 export function OfferingCard({ offering }: { offering: Offering }) {
+  if (offering.kind === "show") return <ShowCard offering={offering} />;
   const price = basePrice(offering), transformer = offering.kind === "transformer";
   const photo = transformer ? characterImage(offering.slug) : undefined;
   return <article className={`offering-card ${transformer ? "transformer-card" : ""}`}>

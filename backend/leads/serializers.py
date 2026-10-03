@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from catalog.models import Availability, Character, Offering, PriceOption
-from catalog.pricing import package_total, transformer_quote
+from catalog.pricing import package_total, transformer_quote, animation_quote
 from .models import Lead, TelegramNotification
 from .selection import character_error
 
@@ -103,6 +103,11 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 transformer_quote(offering, [item for item in addons if item.kind == Offering.Kind.SHOW])
             except (ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
                 raise serializers.ValidationError({"addons": "Стоимость этого шоу после трансформера нужно согласовать отдельно. Опишите пожелания в комментарии."})
+        if offering and offering.kind == Offering.Kind.ANIMATION and addons:
+            try:
+                animation_quote(offering, [item for item in addons if item.kind == Offering.Kind.SHOW])
+            except (ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
+                raise serializers.ValidationError({"addons": "Выберите шоу с подтверждённой ценой. Другие пожелания можно написать в комментарии."})
         return attrs
 
     @transaction.atomic
@@ -123,6 +128,11 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 elif offering.kind == Offering.Kind.TRANSFORMER:
                     quote = transformer_quote(offering, [item for item in addons if item.kind == Offering.Kind.SHOW])
                     known_program_amount = quote["amount_rub"]
+                elif offering.kind == Offering.Kind.ANIMATION:
+                    quote = animation_quote(offering, [item for item in addons if item.kind == Offering.Kind.SHOW])
+                    known_program_amount = quote["amount_rub"] if all(item.kind == Offering.Kind.SHOW for item in addons) else None
+                elif offering.kind == Offering.Kind.SHOW and not addons:
+                    known_program_amount = offering.prices.get(context=PriceOption.Context.BASE, is_confirmed=True).amount_rub
                 elif offering.kind == Offering.Kind.SEASONAL and tariff_code:
                     selected_tariff = offering.prices.get(code=tariff_code, is_confirmed=True)
                     known_program_amount = selected_tariff.amount_rub if not addons else None

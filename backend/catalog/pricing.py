@@ -49,3 +49,23 @@ def transformer_quote(program, shows=()):
                       "support_amount_rub": support, "amount_rub": show_amount + support})
     return {"amount_rub": total, "lines": lines, "requires_manager_confirmation": True,
             "travel": "Стоимость выезда уточним по адресу"}
+
+
+def animation_quote(program, shows=()):
+    """Animation is charged once; each show uses its confirmed add-on rate."""
+    if program.kind != Offering.Kind.ANIMATION:
+        raise ValueError("Выберите анимацию.")
+    base = program.prices.get(context=PriceOption.Context.BASE, is_confirmed=True)
+    lines = [{"slug": program.slug, "name": program.name, "amount_rub": base.amount_rub}]
+    seen = set()
+    for show in shows:
+        if show.pk in seen or show.kind != Offering.Kind.SHOW:
+            raise ValueError("Выберите разные шоу.")
+        seen.add(show.pk)
+        prices = {p.context: p for p in show.prices.filter(is_confirmed=True)}
+        price = prices.get(PriceOption.Context.WITH_ANIMATION) or prices.get(PriceOption.Context.BASE)
+        if price is None:
+            raise ValueError("Цена шоу не подтверждена.")
+        lines.append({"slug": show.slug, "name": show.name, "amount_rub": price.amount_rub})
+    return {"amount_rub": sum(line["amount_rub"] for line in lines), "lines": lines,
+            "requires_manager_confirmation": True, "travel": "Стоимость выезда уточним по адресу"}

@@ -31,6 +31,30 @@ class PublicAPITests(TestCase):
     def submit(self, payload=None):
         return self.client.post("/api/v1/leads/", payload or self.payload, format="json", HTTP_X_CSRFTOKEN=self.token)
 
+    def test_animation_with_shows_uses_addon_tariffs_once_and_matches_preview(self):
+        for slug, amount in [("nitrogen", 7400), ("silver", 6500), ("cotton-candy-show", 5500), ("projector", 6000)]:
+            with self.subTest(slug=slug):
+                cache.clear()
+                preview = self.client.get(f"/api/v1/animation-quote/?offering=animation&addons={slug}")
+                self.assertEqual(preview.status_code, 200)
+                self.assertEqual(preview.json()["amount_rub"], amount)
+                payload = {**self.payload, "offering": "animation", "addons": [slug]}
+                self.assertEqual(self.submit(payload).status_code, 201)
+                lead = Lead.objects.latest("created_at")
+                self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], amount)
+                self.assertEqual(lead.selection_snapshot["price_breakdown"], preview.json()["lines"])
+
+    def test_animation_quote_rejects_duplicates_hidden_and_unpriced_shows(self):
+        self.assertEqual(self.client.get("/api/v1/animation-quote/?offering=animation&addons=silver,silver").status_code, 400)
+        show = Offering.objects.get(slug="silver")
+        show.is_listed = False
+        show.save()
+        self.assertEqual(self.client.get("/api/v1/animation-quote/?offering=animation&addons=silver").status_code, 400)
+        show.is_listed = True
+        show.save()
+        show.prices.update(is_confirmed=False)
+        self.assertEqual(self.client.get("/api/v1/animation-quote/?offering=animation&addons=silver").status_code, 400)
+
     def test_new_year_selected_format_preserves_duration_and_price(self):
         payload = {**self.payload, "offering": "new-year", "character": None, "addons": [], "tariff_code": "minutes-55"}
         self.assertEqual(self.submit(payload).status_code, 201)

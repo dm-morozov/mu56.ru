@@ -18,7 +18,8 @@ export function OfferingDetails({ offering, allOfferings }: { offering: Offering
       {transformer && allOfferings.filter(item => ["nitrogen", "silver", "cotton-candy-show"].includes(item.slug)).map(item => { const show = item.prices.find(p => p.context === "with_animation"), support = item.prices.find(p => p.context === "transformer_support"); return price && show && support ? <div key={item.slug}><span>Вместе с {item.slug === "nitrogen" ? "азотным шоу" : item.slug === "silver" ? "серебряным шоу" : "шоу сладкой ваты"}</span><strong>{rubles(price + show.amount_rub + support.amount_rub)}</strong></div> : null; })}</div>
       {offering.requirements && <p className="detail-requirements">{offering.requirements}</p>}
       {offering.kind === "seasonal" && <NewYearFormats offering={offering} />}
-      <ChooseButton offering={offering.slug}>Обсудить эту программу</ChooseButton><p className="detail-terms"><ShieldCheck size={15} /> Оплата после праздника. Не понравится — можете не платить.<br />Удалённый выезд оплачивается отдельно, стоимость уточним по адресу.</p>
+      {offering.kind === "show" && <><ChooseButton offering="animation" addons={[offering.slug]}>Добавить к анимации</ChooseButton><p className="muted">Шоу продлевает программу. Анимация оплачивается отдельно — состав и итог покажем в заявке.</p></>}
+      <ChooseButton offering={offering.slug} className={offering.kind === "show" ? "button outline" : "button orange"}>{offering.kind === "show" ? "Заказать только шоу" : "Обсудить эту программу"}</ChooseButton><p className="detail-terms"><ShieldCheck size={15} /> Оплата после праздника. Не понравится — можете не платить.<br />Удалённый выезд оплачивается отдельно, стоимость уточним по адресу.</p>
     </div>
   </div>;
 }

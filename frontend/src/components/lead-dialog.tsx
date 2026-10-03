@@ -23,30 +23,32 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
   const program = offerings.find(item => item.slug === programSlug);
   const availableHeroes = program ? program.characters.filter(ordinaryHero) : [...new Map(offerings.flatMap(item => item.characters).filter(ordinaryHero).map(hero => [hero.slug, hero])).values()];
   const transformer = program?.kind === "transformer";
+  const animation = program?.kind === "animation";
+  const pricedComposition = transformer || animation;
   const packaged = program?.kind === "package";
   const packageBase = packaged ? basePrice(program) : undefined;
   const secondTariff = packaged ? program.prices.find(price => price.context === "second_performer") : undefined;
   const packageAmount = packageBase === undefined ? undefined : packageBase + (secondPerformer && secondTariff ? secondTariff.amount_rub : 0);
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
   useEffect(() => {
-    if (selection.open) { setSuccess(false); setError(""); setSecondPerformer(false); setAddons([]); setQuote(null); setProgramSlug(selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
+    if (selection.open) { setSuccess(false); setError(""); setSecondPerformer(false); setAddons(selection.addons || []); setQuote(null); setProgramSlug(selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
     else ref.current?.close();
-  }, [selection.open, selection.offering, selection.character, selection.tariff]);
+  }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons]);
   useEffect(() => {
     setQuote(null); setQuoteError("");
-    if (!selection.open || !transformer) return;
+    if (!selection.open || !pricedComposition) return;
     const controller = new AbortController();
     const params = new URLSearchParams({ offering: programSlug, addons: addons.join(",") });
-    fetch(`/api/v1/transformer-quote/?${params}`, {cache:"no-store", signal:controller.signal})
+    fetch(`/api/v1/${animation ? "animation" : "transformer"}-quote/?${params}`, {cache:"no-store", signal:controller.signal})
       .then(async response => { const data = await response.json().catch(() => { throw new Error("Не удалось рассчитать стоимость. Попробуйте выбрать программу ещё раз или позвоните нам."); }); if (!response.ok) throw new Error(data.detail || "Не удалось рассчитать стоимость."); return data as Quote; })
       .then(data => { if (!controller.signal.aborted) setQuote(data); })
       .catch(err => { if (!controller.signal.aborted) setQuoteError(err instanceof Error ? err.message : "Не удалось рассчитать стоимость."); });
     return () => controller.abort();
-  }, [selection.open, transformer, programSlug, addons, quoteAttempt]);
+  }, [selection.open, pricedComposition, animation, programSlug, addons, quoteAttempt]);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   useEffect(() => { if (success) successRef.current?.focus(); }, [success]);
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy || (transformer && !quote)) return;
+    event.preventDefault(); if (busy || (pricedComposition && !quote)) return;
     const form = event.currentTarget, data = new FormData(form);
     let requestSent = false;
     setBusy(true); setError("");
@@ -62,7 +64,7 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
         offering: data.get("offering") || null,
         tariff_code: selectedOffering?.kind === "seasonal" ? tariffCode : "",
         character: compatibleCharacter ? heroSlug || null : null,
-        addons: transformer || selectedOffering?.kind === "seasonal" ? addons : [],
+        addons: pricedComposition || selectedOffering?.kind === "seasonal" ? addons : [],
         second_performer: !!packaged && secondPerformer && !!secondTariff,
         data_consent: data.get("data_consent") === "on", website: data.get("website") || "",
       };
@@ -99,17 +101,18 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
           <fieldset className="lead-addons"><legend>Состав команды</legend><p>В базовую цену {program.included_performers === 1 ? "входит один аниматор" : `входят участники команды: ${program.included_performers}`}. Героя выберите выше; пожелания ко второму герою можно написать ниже.</p>{secondTariff ? <label><input type="checkbox" name="second_performer" checked={secondPerformer} onChange={event => setSecondPerformer(event.target.checked)} /><span>Добавить второго аниматора<small>+ {rubles(secondTariff.amount_rub)}</small></span></label> : <p>Дополнительного ведущего и стоимость согласуем отдельно.</p>}</fieldset>
           <div className="lead-quote" aria-live="polite" aria-atomic="true">{packageAmount !== undefined ? <><strong>Предварительно: {rubles(packageAmount)}</strong><ul><li>{program.name}<span>{rubles(packageBase!)}</span></li>{secondPerformer && secondTariff && <li>Второй аниматор<span>{rubles(secondTariff.amount_rub)}</span></li>}</ul></> : <strong>Стоимость уточним</strong>}<p>Состав, итоговую цену, звук и стоимость выезда согласуем до праздника. Фоновая музыка после программы — без ведущего.</p></div>
         </>}
-        {transformer && <>
-          <fieldset className="lead-addons"><legend>Продолжить праздник шоу</legend><p>Можно выбрать несколько. Доплата включает шоу и участие второго участника команды.</p>{availableShows.map(show => { const amount = show.prices.filter(price => ["with_animation", "transformer_support"].includes(price.context)).reduce((sum,price) => sum + price.amount_rub,0); return <label key={show.slug}><input type="checkbox" checked={addons.includes(show.slug)} onChange={event => { setQuote(null); setAddons(current => event.target.checked ? [...current,show.slug] : current.filter(slug => slug !== show.slug)); }} /><span>{show.name}<small>+ {rubles(amount)}</small></span></label>; })}</fieldset>
+        {pricedComposition && <>
+          <fieldset className="lead-addons"><legend>Продолжить праздник шоу</legend><p>Можно выбрать несколько. {transformer ? "Доплата включает шоу и участие второго участника команды." : "Анимация оплачивается один раз. Шоу добавляются по цене с анимацией; время шоу продлевает программу."}</p>{(animation ? offerings.filter(item => item.kind === "show") : availableShows).map(show => { const amount = animation ? (show.prices.find(price => price.context === "with_animation")?.amount_rub ?? basePrice(show)) : show.prices.filter(price => ["with_animation", "transformer_support"].includes(price.context)).reduce((sum,price) => sum + price.amount_rub,0); return <label key={show.slug}><input type="checkbox" checked={addons.includes(show.slug)} onChange={event => { setQuote(null); setAddons(current => event.target.checked ? [...current,show.slug] : current.filter(slug => slug !== show.slug)); }} /><span>{show.name}<small>+ {amount === undefined ? "Цену уточним" : rubles(amount)}</small></span></label>; })}</fieldset>
           <div className="lead-quote" aria-live="polite" aria-atomic="true">{quote ? <><strong>Предварительно: {rubles(quote.amount_rub)}</strong><ul>{quote.lines.map(line => <li key={line.slug}>{line.name}<span>{rubles(line.amount_rub)}</span></li>)}</ul><p>Состав, итоговую цену и стоимость выезда согласуем с вами до праздника.</p></> : <><p>{quoteError || "Рассчитываем стоимость…"}</p>{quoteError && <button type="button" className="button outline quote-retry" onClick={() => setQuoteAttempt(value => value + 1)}>Повторить расчёт</button>}</>}</div>
         </>}
         {program?.kind === "seasonal" && <label>Формат новогоднего поздравления<select value={tariffCode} onChange={event => setTariffCode(event.target.value)}><option value="">Помогите выбрать</option>{program.prices.map(price => <option key={price.code} value={price.code}>{price.code === "group-with-sound" ? "Час и комплект звука" : `${price.duration_minutes} минут · два героя`} — {rubles(price.amount_rub)}</option>)}</select></label>}
         {program?.kind === "seasonal" && <fieldset className="lead-addons"><legend>Продолжить новогодний праздник</legend><p>Шоу идут после поздравления, с двумя героями. Стоимость согласуем отдельно.</p>{offerings.filter(show => ["nitrogen", "silver", "cotton-candy-show"].includes(show.slug)).map(show => <label key={show.slug}><input type="checkbox" checked={addons.includes(show.slug)} onChange={event => setAddons(current => event.target.checked ? [...current, show.slug] : current.filter(slug => slug !== show.slug))} /><span>{show.name}</span></label>)}</fieldset>}
+        {program?.kind === "show" && <div className="lead-quote"><strong>{basePrice(program) === undefined ? "Цену уточним" : `Шоу отдельно: ${rubles(basePrice(program)!)}`}</strong><p>Анимация в этот вариант не входит. Если нужен герой и игры, выберите программу «Аниматор на праздник» и отметьте шоу.</p></div>}
         <label>Пожелания<textarea name="comment" maxLength={2000} placeholder="Возраст ребёнка, любимый герой, сколько будет гостей…" rows={3} /></label>
         <div className="honeypot" aria-hidden="true"><label>Ваш сайт<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
         <label className="consent"><input name="data_consent" type="checkbox" required /><span>Согласен на <Link href="/privacy" target="_blank" rel="noopener noreferrer">обработку данных</Link> для связи по заявке</span></label>
         {error && <p ref={errorRef} tabIndex={-1} className="form-error" role="alert">{error}</p>}
-        <button className="button orange form-submit" disabled={busy || (!!transformer && !quote)}>{busy ? "Отправляем…" : "Обсудить мой праздник"}</button>
+        <button className="button orange form-submit" disabled={busy || (!!pricedComposition && !quote)}>{busy ? "Отправляем…" : "Обсудить мой праздник"}</button>
         <a className="form-phone" href="tel:+79033922229"><Phone size={16} /> Можно просто позвонить: +7 903 392-22-29</a>
         </fieldset>
       </form>

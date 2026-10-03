@@ -15,7 +15,7 @@ from rest_framework.throttling import ScopedRateThrottle
 
 from .serializers import LeadCreateSerializer
 from catalog.models import Offering, Availability, PriceOption
-from catalog.pricing import transformer_quote
+from catalog.pricing import transformer_quote, animation_quote
 
 
 @never_cache
@@ -42,6 +42,28 @@ def quote_transformer(request):
         if len(shows) != len(addon_slugs):
             raise ValueError()
         return JsonResponse(transformer_quote(program, shows))
+    except (Offering.DoesNotExist, ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
+        return JsonResponse({"detail": "Этот состав требует уточнения цены. Выберите другое шоу или опишите пожелания."}, status=400)
+
+
+@never_cache
+@require_GET
+def quote_animation(request):
+    """Read-only preview: accepts catalogue slugs, never contact information."""
+    query = request.GET
+    if set(query) - {"offering", "addons"} or any(len(query.getlist(key)) != 1 for key in query):
+        return JsonResponse({"detail": "Укажите программу и разные шоу."}, status=400)
+    addon_slugs = query.get("addons", "").split(",") if query.get("addons") else []
+    if len(addon_slugs) > 6 or len(set(addon_slugs)) != len(addon_slugs):
+        return JsonResponse({"detail": "Выберите разные шоу, не более шести."}, status=400)
+    try:
+        program = Offering.objects.get(slug=query.get("offering", ""), kind=Offering.Kind.ANIMATION, is_listed=True)
+        if program.availability == Availability.UNAVAILABLE:
+            raise ValueError()
+        shows = list(Offering.objects.filter(slug__in=addon_slugs, kind=Offering.Kind.SHOW, is_listed=True).exclude(availability=Availability.UNAVAILABLE))
+        if len(shows) != len(addon_slugs):
+            raise ValueError()
+        return JsonResponse(animation_quote(program, shows))
     except (Offering.DoesNotExist, ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
         return JsonResponse({"detail": "Этот состав требует уточнения цены. Выберите другое шоу или опишите пожелания."}, status=400)
 
