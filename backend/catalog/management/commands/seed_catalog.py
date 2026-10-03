@@ -119,7 +119,7 @@ class Command(BaseCommand):
                 service.characters.set([c for s, c in characters.items() if c.category not in {"Большие герои", "Новый год"}])
             elif created and kind == "seasonal":
                 service.characters.set([characters["new-year-duo"]])
-        for duration, amount in [(15, 3500), (30, 4500), (45, 5000), (60, 6000)]:
+        for duration, amount in [(30, 4500), (45, 5000), (60, 6000)]:
             self.price(services["new-year"], f"minutes-{duration}", amount, duration=duration)
         for slug, name, amount, extra, stages in PACKAGES:
             package, created = self.create(Offering, {"slug": slug}, {

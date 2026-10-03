@@ -86,9 +86,36 @@ class CatalogTests(TestCase):
         response = self.client.get(f"/admin/catalog/offering/{package.pk}/change/")
         self.assertContains(response, "Фоновая музыка, без ведущих")
 
-    def test_new_year_has_four_independent_confirmed_tariffs(self):
-        tariffs = Offering.objects.get(slug="new-year").prices.order_by("duration_minutes")
-        self.assertEqual(list(tariffs.values_list("duration_minutes", "amount_rub")), [(15, 3500), (30, 4500), (45, 5000), (60, 6000)])
+    def test_new_year_has_three_independent_confirmed_tariffs(self):
+        tariffs = Offering.objects.get(slug="new-year").prices.filter(is_confirmed=True).order_by("duration_minutes")
+        self.assertEqual(list(tariffs.values_list("duration_minutes", "amount_rub")), [(30, 4500), (45, 5000), (60, 6000)])
+
+    def test_retired_new_year_tariff_is_preserved_but_not_public(self):
+        from importlib import import_module
+        from django.apps import apps
+        from .views import public_offerings
+
+        program = Offering.objects.get(slug="new-year")
+        old = PriceOption.objects.create(offering=program, code="minutes-15", duration_minutes=15, amount_rub=3500, is_confirmed=True)
+        from .models import CharacterPhoto
+        duo = Character.objects.get(slug="new-year-duo")
+        old_photo = CharacterPhoto.objects.create(character=duo, image="old-costume.jpg", alt="Старый костюм")
+        migration = import_module("catalog.migrations.0007_refresh_new_year")
+        migration.refresh_new_year(apps, None)
+        call_command("seed_catalog", stdout=StringIO())
+        old.refresh_from_db()
+        self.assertEqual(old.amount_rub, 3500)
+        self.assertFalse(old.is_confirmed)
+        old_photo.refresh_from_db()
+        self.assertFalse(old_photo.is_listed)
+        new_photo = CharacterPhoto.objects.create(character=duo, image="new-costume.jpg", alt="Новый костюм")
+        call_command("seed_character_photos", stdout=StringIO())
+        old_photo.refresh_from_db()
+        new_photo.refresh_from_db()
+        self.assertFalse(old_photo.is_listed)
+        self.assertTrue(new_photo.is_listed)
+        visible = public_offerings().get(pk=program.pk).public_prices
+        self.assertNotIn("minutes-15", [price.code for price in visible])
 
     def test_new_year_lists_one_pair_and_keeps_owner_description(self):
         program = Offering.objects.get(slug="new-year")
