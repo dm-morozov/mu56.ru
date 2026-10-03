@@ -9,6 +9,7 @@ const suggestions: Record<string, string[]> = {
   "esli-rebenok-stesnyaetsya": ["animation"],
   "kak-vybrat-geroya": ["bumblebee", "sweet-vibe", "full-party"],
   "igry-shou-i-tort": ["sweet-vibe", "ice-breath", "full-party"],
+  "vypusknoy-dlya-gruppy": ["animation", "ice-breath", "full-party"],
 };
 
 export function ArticlePlanning({ slug, offerings, articles, characters = [] }: { slug: string; offerings: Offering[]; articles: Article[]; characters?: Character[] }) {
@@ -17,6 +18,7 @@ export function ArticlePlanning({ slug, offerings, articles, characters = [] }: 
   const reading = articles.filter(item => item.slug !== slug).slice(0, 3);
   const heroes = slug === "kak-vybrat-geroya" ? characters.filter(item => ["spider-man", "ninja-turtle"].includes(item.slug) && item.availability !== "unavailable") : [];
   return <section className="article-planning" aria-label="Программы и материалы по теме">
+    {slug === "vypusknoy-dlya-gruppy" && <div className="article-character-links"><h2>Соберём выпускной для вашей группы</h2><p>Посмотрите варианты и условия выезда. Число ведущих, звук и итоговый состав обсудим для вашей площадки.</p><Link className="text-link" href="/holidays/graduation">Программы на детский выпускной в Оренбурге →</Link>{offerings.some(item => item.slug === "sound" && item.availability !== "unavailable") && <Link className="text-link" href="/extras/sound">Комплект звука с двумя микрофонами →</Link>}</div>}
     {slug === "kak-vybrat-geroya" && <div className="article-character-links"><h2>Посмотрите реальные образы</h2><p>Откройте страницу героя, чтобы посмотреть костюм и фотографии из доступной галереи.</p>{heroes.map(item => <Link key={item.slug} className="text-link" href={`/characters/${item.slug}`}>{item.name}{item.availability === "check" ? " — доступность уточним" : ""} →</Link>)}<Link className="text-link" href="/characters">Выбрать из всех персонажей →</Link></div>}
     {programs.length > 0 && <><h2>Посмотрите подходящие программы</h2><div className="article-program-links">{programs.map(item => {
       const price = basePrice(item);
