@@ -9,12 +9,18 @@ permissions:
 
 concurrency:
   group: checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   application:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend: ${{ steps.images.outputs.backend }}
+      frontend: ${{ steps.images.outputs.frontend }}
     services:
       postgres:
         image: postgres:18
@@ -68,6 +74,7 @@ jobs:
         run: |
           python scripts/check_release.py
           python -m unittest discover -s scripts -p test_check_staging.py
+          python -m unittest discover -s scripts -p test_release_controller.py
       - name: Check Django and migrations
         run: |
           python backend/manage.py check
@@ -95,3 +102,57 @@ jobs:
           fi
           pnpm --dir frontend build
           pnpm --dir frontend typecheck
+      - name: Build and publish pinned Docker images
+        id: images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006'
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io; if [ -n "${backend_pid:-}" ]; then kill "$backend_pid" 2>/dev/null || true; fi' EXIT
+          python backend/manage.py runserver 127.0.0.1:8081 --noreload > /tmp/mu56-image-api.log 2>&1 &
+          backend_pid=$!
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8081/api/v1/offerings/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8081/api/v1/offerings/ > /dev/null
+          for service in backend frontend; do
+            image="ghcr.io/dm-morozov/mu56-${service}"
+            docker build --network host -f "deploy/docker/${service}.Dockerfile" \
+              --label "org.opencontainers.image.source=https://github.com/dm-morozov/mu56.ru" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$image:$GITHUB_SHA" .
+            docker push "$image:$GITHUB_SHA"
+            digest=$(docker image inspect "$image:$GITHUB_SHA" --format '{{index .RepoDigests 0}}')
+            printf '%s=%s\n' "$service" "$digest" >> "$GITHUB_OUTPUT"
+          done
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006'
+    needs: application
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: mu56-dev
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: mu56-vps-release
+      cancel-in-progress: false
+    steps:
+      - name: Deploy exact checked images
+        env:
+          DEPLOY_KEY: ${{ secrets.MU56_DEPLOY_KEY }}
+          HOST_KEY: ${{ secrets.MU56_HOST_KEY }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BACKEND_IMAGE: ${{ needs.application.outputs.backend }}
+          FRONTEND_IMAGE: ${{ needs.application.outputs.frontend }}
+        shell: bash
+        run: |
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/mu56"
+          printf '%s\n' "$HOST_KEY" > "$HOME/.ssh/known_hosts"
+          trap 'rm -f "$HOME/.ssh/mu56" "$HOME/.ssh/known_hosts"' EXIT
+          python -c 'import json,os; print(json.dumps({"sha":os.environ["GITHUB_SHA"], "backend":os.environ["BACKEND_IMAGE"], "frontend":os.environ["FRONTEND_IMAGE"], "token":os.environ["REGISTRY_TOKEN"]}))' | \
+            ssh -i "$HOME/.ssh/mu56" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes mu56-deploy@161.104.32.37 release
