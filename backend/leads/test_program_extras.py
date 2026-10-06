@@ -1,3 +1,4 @@
+from django.conf import settings
 from io import StringIO
 
 from django.core.cache import cache
@@ -23,7 +24,7 @@ class ProgramExtrasTests(TestCase):
     def submit(self, **changes):
         cache.clear()
         return self.client.post("/api/v1/leads/", {
-            "phone": "+79031112233", "data_consent": True,
+            "phone": "+79031112233", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION,
             "offering": "silver-party", "addons": ["sound", "photographer"], **changes,
         }, format="json", HTTP_X_CSRFTOKEN=self.token)
 

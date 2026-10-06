@@ -9,6 +9,7 @@ import { PhoneInput } from "./phone-input";
 import { close, useAppDispatch, useSelection } from "./store-provider";
 import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
 import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
+import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
 type Quote = { amount_rub: number; lines: {slug: string; name: string; amount_rub: number}[] };
@@ -99,7 +100,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         addons: selectedOffering ? addons : [],
         second_performer: !!packaged && secondPerformer && !!secondTariff,
         second_character: packaged && secondPerformer && secondTariff && availableHeroes.some(hero => hero.slug === secondHeroSlug) ? secondHeroSlug || null : null,
-        data_consent: data.get("data_consent") === "on", website: data.get("website") || "",
+        data_consent: data.get("data_consent") === "on", consent_version: consent.version, website: data.get("website") || "",
       };
       requestSent = true;
       const response = await fetch("/api/v1/leads/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token }, body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
@@ -168,7 +169,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         {program && !scheduleError && !pricedComposition && (packaged || program.kind === "seasonal" || selectedExtras.length > 0 || secondPerformer) && <div className="lead-quote" aria-live="polite"><strong>{simpleTotal === undefined ? "Итоговую стоимость согласуем" : `Всего за программу: ${rubles(simpleTotal)}`}</strong><ul><li>{program.name}<span>{(packaged ? packageBase : simpleBase) === undefined ? "Цену уточним" : rubles((packaged ? packageBase : simpleBase)!)}</span></li>{seasonalShows.map(show => <li key={show.slug}><span className="lead-quote-copy"><span>{show.name}</span><small>{show.duration_is_approximate ? "≈ " : ""}{duration(show.duration_minutes)} · 2 аниматора</small></span><span>{twoPerformerShowPrice(show) === undefined ? "Цену уточним" : rubles(twoPerformerShowPrice(show)!)}</span></li>)}{packaged && program.parts.map(part => <li key={`included-${part.position}`}><span className="lead-quote-copy"><span>{part.title}</span><small>{part.is_approximate ? "≈ " : ""}{part.duration_minutes} мин</small></span><span className="lead-quote-amount">Включено</span></li>)}{packaged && soundIncluded && <li>Много звука<span>Включено</span></li>}{secondPerformer && secondTariff && <li>Второй аниматор на всю программу<span>{rubles(secondTariff.amount_rub)}</span></li>}{selectedExtras.map(item => <li key={item.slug}>{item.name}<span>{basePrice(item) === undefined ? "Цену уточним" : rubles(basePrice(item)!)}</span></li>)}</ul><p>{secondPerformer && "В стоимость программы включён второй аниматор. "}Стоимость выезда согласуем отдельно.</p></div>}
         <label>Пожелания <span className="field-optional">(необязательно)</span><textarea name="comment" maxLength={2000} placeholder="Возраст ребёнка, любимый герой, сколько будет гостей…" rows={3} /></label>
         <div className="honeypot" aria-hidden="true"><label>Ваш сайт<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
-        <label className="consent"><input name="data_consent" type="checkbox" required /><span>Согласен на <Link href="/privacy" target="_blank" rel="noopener noreferrer">обработку данных</Link> для связи по заявке</span></label>
+        <label className="consent"><input name="data_consent" type="checkbox" required /><span>Даю <Link href="/consent" target="_blank" rel="noopener noreferrer">согласие на обработку персональных данных</Link> для рассмотрения заявки и связи со мной. <Link href="/privacy" target="_blank" rel="noopener noreferrer">Политика обработки данных</Link>.</span></label>
         {error && <p ref={errorRef} tabIndex={-1} className="form-error" role="alert">{error}</p>}
         <button className="button orange form-submit" disabled={busy || !!scheduleError || (!!pricedComposition && !quote)}>{busy ? "Отправляем…" : "Обсудить мой праздник"}</button>
         <a className="form-phone" href="tel:+79033922229"><Phone size={16} /> Можно просто позвонить: +7 903 392-22-29</a>

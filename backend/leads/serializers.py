@@ -44,6 +44,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         queryset=Offering.objects.filter(is_listed=True, kind__in=[Offering.Kind.SHOW, Offering.Kind.EXTRA]).exclude(availability=Availability.UNAVAILABLE),
     )
     data_consent = serializers.BooleanField(write_only=True)
+    consent_version = serializers.CharField(write_only=True, max_length=50)
     website = serializers.CharField(required=False, allow_blank=True, max_length=200, write_only=True)
     child_age = serializers.IntegerField(required=False, allow_null=True, min_value=1, max_value=18)
     children_count = serializers.IntegerField(required=False, allow_null=True, min_value=1, max_value=1000)
@@ -53,7 +54,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         fields = (
             "name", "phone", "contact_method", "messenger_handle", "event_date", "event_time", "child_age",
             "children_count", "location", "comment", "offering", "character", "second_character", "addons", "second_performer",
-            "data_consent", "website", "tariff_code",
+            "data_consent", "consent_version", "website", "tariff_code",
         )
 
     def to_internal_value(self, data):
@@ -83,6 +84,11 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     def validate_data_consent(self, value):
         if not value:
             raise serializers.ValidationError("Нужно согласие на обработку заявки.")
+        return value
+
+    def validate_consent_version(self, value):
+        if value != settings.LEAD_CONSENT_VERSION:
+            raise serializers.ValidationError("Текст согласия обновился. Обновите страницу и ознакомьтесь с ним перед отправкой заявки.")
         return value
 
     def validate_website(self, value):
@@ -133,6 +139,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         validated_data.pop("data_consent")
+        validated_data.pop("consent_version")
         validated_data.pop("website", None)
         addons = validated_data.pop("addons", [])
         tariff_code = validated_data.pop("tariff_code", "")

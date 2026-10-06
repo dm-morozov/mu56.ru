@@ -1,3 +1,4 @@
+from django.conf import settings
 from io import StringIO
 
 from django.core.cache import cache
@@ -28,7 +29,7 @@ class SoundAddonTests(TestCase):
                 self.assertEqual(preview.json()["amount_rub"], amount)
                 response = self.client.post("/api/v1/leads/", {
                     "name": "Тест звука", "phone": "+7 (903) 111-22-33", "contact_method": "phone",
-                    "offering": offering, "addons": ["nitrogen", "sound"], "data_consent": True,
+                    "offering": offering, "addons": ["nitrogen", "sound"], "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION,
                 }, format="json", HTTP_X_CSRFTOKEN=self.token)
                 self.assertEqual(response.status_code, 201, response.data)
                 lead = Lead.objects.latest("created_at")
@@ -47,6 +48,6 @@ class SoundAddonTests(TestCase):
         self.assertEqual(self.client.get("/api/v1/transformer-quote/?offering=bumblebee&addons=sound").status_code, 400)
         response = self.client.post("/api/v1/leads/", {
             "name": "Тест звука", "phone": "+79031112233", "contact_method": "phone",
-            "offering": "bumblebee", "addons": ["sound"], "data_consent": True,
+            "offering": "bumblebee", "addons": ["sound"], "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION,
         }, format="json", HTTP_X_CSRFTOKEN=self.token)
         self.assertEqual(response.status_code, 400)

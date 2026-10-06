@@ -139,7 +139,7 @@ try:
     status, headers, body = request("/api/v1/csrf/")
     token = json.loads(body)["csrf_token"]
     require(status == 200 and "Secure" in headers.get("Set-Cookie", ""), "Secure CSRF cookie")
-    lead = {"name": "Linux QA — не настоящий заказ", "phone": "+79031112233", "data_consent": True,
+    lead = {"name": "Linux QA — не настоящий заказ", "phone": "+79031112233", "data_consent": True, "consent_version": json.loads((Path(__file__).resolve().parents[1] / "frontend/src/lib/lead-consent.json").read_text(encoding="utf-8"))["version"],
             "offering": "new-year", "tariff_code": "minutes-50", "addons": ["nitrogen"],
             "comment": "Изолированный Linux-стенд. Не звонить, не бронировать."}
     csrf_headers = {"Content-Type": "application/json", "Cookie": "csrftoken=" + token,

@@ -13,7 +13,7 @@ def configured():
     return bool(settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_CHAT_ID)
 
 
-def process_one():
+def process_one(*, created_after=None):
     if not configured():
         return False
     now = timezone.now()
@@ -22,7 +22,10 @@ def process_one():
         expired = list(Notification.objects.select_for_update(skip_locked=True).filter(status=Notification.Status.SENDING, started_at__lt=now - timedelta(minutes=2)))
         Notification.objects.filter(pk__in=[row.pk for row in expired]).update(status=Notification.Status.UNCERTAIN, last_error="Обработчик прерван: проверьте Telegram перед повтором", claim_token=None)
         Lead.objects.filter(pk__in=[row.lead_id for row in expired]).update(notification_status=Notification.Status.UNCERTAIN.label)
-        notification = Notification.objects.select_for_update(skip_locked=True).filter(status=Notification.Status.PENDING, next_attempt_at__lte=now).order_by("next_attempt_at", "pk").first()
+        ready = Notification.objects.select_for_update(skip_locked=True).filter(status=Notification.Status.PENDING, next_attempt_at__lte=now)
+        if created_after is not None:
+            ready = ready.filter(lead__created_at__gte=created_after)
+        notification = ready.order_by("next_attempt_at", "pk").first()
         if not notification:
             return False
         token = uuid.uuid4()

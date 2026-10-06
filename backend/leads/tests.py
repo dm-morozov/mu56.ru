@@ -2,6 +2,7 @@ from datetime import timedelta
 from io import StringIO
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.cache import cache
 from django.core.management import call_command
 from django.test import TestCase
@@ -25,7 +26,7 @@ class PublicAPITests(TestCase):
         self.payload = {
             "name": "Тестовый клиент", "phone": "8 (903) 111-22-33", "contact_method": "telegram",
             "event_date": str(timezone.localdate() + timedelta(days=10)),
-            "offering": "bumblebee", "character": "spider-man", "addons": ["silver"], "data_consent": True,
+            "offering": "bumblebee", "character": "spider-man", "addons": ["silver"], "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION,
         }
 
     def submit(self, payload=None):
@@ -113,6 +114,20 @@ class PublicAPITests(TestCase):
         response = self.submit()
         self.assertEqual(response.status_code, 201)
 
+    def test_stale_or_missing_consent_version_cannot_create_a_lead(self):
+        for version in (None, "draft-v1"):
+            with self.subTest(version=version):
+                cache.clear()
+                payload = dict(self.payload)
+                if version is None:
+                    payload.pop("consent_version")
+                else:
+                    payload["consent_version"] = version
+                response = self.submit(payload)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("consent_version", response.json())
+                self.assertFalse(Lead.objects.exists())
+
     def test_lead_stores_choice_phone_and_server_price_snapshot(self):
         response = self.submit()
         self.assertEqual(response.status_code, 201)
@@ -126,7 +141,7 @@ class PublicAPITests(TestCase):
         self.assertEqual(lead.character.slug, "spider-man")
         self.assertEqual(lead.addons.get().slug, "silver")
         self.assertIsNotNone(lead.consent_at)
-        self.assertEqual(lead.consent_version, "draft-v1")
+        self.assertEqual(lead.consent_version, settings.LEAD_CONSENT_VERSION)
         price = Offering.objects.get(slug="silver").prices.get(code="with-animation")
         price.amount_rub = 5000
         price.save()
@@ -232,7 +247,7 @@ class PublicAPITests(TestCase):
             self.assertEqual(lead.character.slug if lead.character else None, slug)
 
     def test_partial_request_and_unpriced_extra_are_accepted_for_discussion(self):
-        payload = {"phone": "9031112233", "data_consent": True, "addons": ["face-painting"]}
+        payload = {"phone": "9031112233", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION, "addons": ["face-painting"]}
         self.assertEqual(self.submit(payload).status_code, 201)
         snapshot = Lead.objects.get().selection_snapshot
         self.assertIsNone(snapshot["known_program_amount_rub"])

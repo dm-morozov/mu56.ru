@@ -5,7 +5,7 @@ export const siteOrigin = new URL(process.env.SITE_URL || "https://mu56.ru").ori
 export const indexingEnabled = process.env.SITE_INDEXING_ENABLED === "true";
 export function crawlerRules(enabled: boolean) {
   if (!enabled) return [{ userAgent: "*", disallow: "/" }];
-  return [{ userAgent: "*", allow: "/", disallow: ["/api/", "/admin/", "/privacy"] }, { userAgent: "OAI-SearchBot", allow: "/", disallow: ["/api/", "/admin/", "/privacy"] }];
+  return [{ userAgent: "*", allow: "/", disallow: ["/api/", "/admin/", "/privacy", "/consent"] }, { userAgent: "OAI-SearchBot", allow: "/", disallow: ["/api/", "/admin/", "/privacy", "/consent"] }];
 }
 export const absoluteUrl = (path: string) => new URL(path, `${siteOrigin}/`).href;
 export const servicePath = (kind: string, slug: string) => ({ animation: "/animators", transformer: `/transformers/${slug}`, package: `/packages/${slug}`, show: `/shows/${slug}`, extra: `/extras/${slug}`, seasonal: "/new-year" } as Record<string, string>)[kind];

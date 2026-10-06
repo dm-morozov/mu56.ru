@@ -1,3 +1,4 @@
+from django.conf import settings
 from datetime import timedelta
 from io import StringIO
 import json
@@ -21,7 +22,7 @@ from .telegram import TelegramError, bot_request, notification_payload
 @override_settings(TELEGRAM_ENABLED=True, TELEGRAM_BOT_TOKEN="123456:test-token", TELEGRAM_CHAT_ID="12345")
 class NotificationTests(TestCase):
     def setUp(self):
-        serializer = LeadCreateSerializer(data={"name": "Тест", "phone": "+79031112233", "comment": "<b>Не разметка</b>", "data_consent": True})
+        serializer = LeadCreateSerializer(data={"name": "Тест", "phone": "+79031112233", "comment": "<b>Не разметка</b>", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION})
         serializer.is_valid(raise_exception=True)
         self.lead = serializer.save()
         self.notification = self.lead.telegram_notification
@@ -29,6 +30,19 @@ class NotificationTests(TestCase):
     def refresh(self):
         self.notification.refresh_from_db()
         self.lead.refresh_from_db()
+
+    @patch("leads.notifications.bot_request", return_value={"message_id": 43})
+    def test_created_after_skips_restored_pending_notifications(self, send):
+        cutoff = timezone.now() - timedelta(minutes=1)
+        Lead.objects.filter(pk=self.lead.pk).update(created_at=cutoff - timedelta(days=1))
+        self.assertFalse(process_one(created_after=cutoff))
+        send.assert_not_called()
+        self.refresh()
+        self.assertEqual(self.notification.status, Notification.Status.PENDING)
+        Lead.objects.filter(pk=self.lead.pk).update(created_at=cutoff + timedelta(seconds=1))
+        self.assertTrue(process_one(created_after=cutoff))
+        self.refresh()
+        self.assertEqual(self.notification.status, Notification.Status.SENT)
 
     @patch("leads.notifications.bot_request", return_value={"message_id": 42})
     def test_durable_queue_and_sent_notification_not_sent_twice(self, send):
@@ -113,7 +127,7 @@ class NotificationTests(TestCase):
     @patch("leads.serializers.TelegramNotification.objects.create", side_effect=RuntimeError("queue unavailable"))
     def test_lead_and_queue_are_saved_atomically(self, create):
         count = Lead.objects.count()
-        serializer = LeadCreateSerializer(data={"phone": "+79031112233", "data_consent": True})
+        serializer = LeadCreateSerializer(data={"phone": "+79031112233", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION})
         serializer.is_valid(raise_exception=True)
         with self.assertRaises(RuntimeError):
             serializer.save()

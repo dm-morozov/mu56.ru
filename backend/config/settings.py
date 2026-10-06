@@ -77,7 +77,7 @@ REST_FRAMEWORK = {
     "NUM_PROXIES": 0,  # Configure deliberately alongside the trusted reverse proxy.
 }
 DATA_UPLOAD_MAX_MEMORY_SIZE = 64 * 1024
-LEAD_CONSENT_VERSION = "draft-v1"  # Replace with the actual published text version before launch.
+LEAD_CONSENT_VERSION = json.loads((BASE_DIR.parent / "frontend" / "src" / "lib" / "lead-consent.json").read_text(encoding="utf-8"))["version"]
 CSRF_FAILURE_VIEW = "leads.views.csrf_failure"
 CSRF_TRUSTED_ORIGINS = os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000" if DEBUG else "").split(",") if DEBUG or os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS") else []
 if not DEBUG:

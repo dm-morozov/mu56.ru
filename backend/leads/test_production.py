@@ -34,7 +34,7 @@ class ProductionProxyTests(TestCase):
             HTTP_HOST="mu56.ru", HTTP_X_FORWARDED_PROTO="https",
             HTTP_X_FORWARDED_FOR="192.0.2.10", REMOTE_ADDR="127.0.0.1",
         )
-        self.payload = {"name": "Production QA", "phone": "+79031112233", "data_consent": True}
+        self.payload = {"name": "Production QA", "phone": "+79031112233", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION}
 
     def token(self):
         response = self.client.get("/api/v1/csrf/")

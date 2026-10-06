@@ -1,3 +1,4 @@
+from django.conf import settings
 from datetime import timedelta
 from io import StringIO
 
@@ -24,7 +25,7 @@ class LeadWorkflowAdminTests(TestCase):
 
     def setUp(self):
         self.client.force_login(self.admin_user)
-        serializer = LeadCreateSerializer(data={"name": "Клиент рабочего процесса", "phone": "+79031112233", "offering": "full-party", "comment": "Выпускной", "data_consent": True})
+        serializer = LeadCreateSerializer(data={"name": "Клиент рабочего процесса", "phone": "+79031112233", "offering": "full-party", "comment": "Выпускной", "data_consent": True, "consent_version": settings.LEAD_CONSENT_VERSION})
         serializer.is_valid(raise_exception=True)
         self.lead = serializer.save()
         self.url = f"/admin/leads/lead/{self.lead.pk}/change/"

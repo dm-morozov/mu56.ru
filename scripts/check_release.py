@@ -55,6 +55,7 @@ def audit():
         if name not in ignored:
             issues.append({'file': name, 'reason': 'missing-ignore-rule'})
     required = ['backend/manage.py', 'backend/requirements.txt', 'backend/config/production.py',
+                'frontend/src/lib/lead-consent.json',
                 'frontend/package.json', 'frontend/pnpm-lock.yaml', 'frontend/next.config.ts',
                 'deploy/requirements.txt', 'deploy/manage.sh', 'deploy/preflight.sh',
                 'deploy/django.env.example', 'deploy/frontend.env.example']
