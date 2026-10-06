@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import "@fontsource/manrope/400.css";
-import "@fontsource/manrope/500.css";
-import "@fontsource/manrope/600.css";
-import "@fontsource/manrope/700.css";
-import "@fontsource/manrope/800.css";
+import "@fontsource-variable/manrope";
 import "@fontsource/unbounded/600.css";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { StoreProvider } from "@/components/store-provider";
-import { LeadDialog } from "@/components/lead-dialog";
+import { BookingDialog } from "@/components/booking-dialog";
 import { getOfferings } from "@/lib/catalog";
 import { bookingCatalog } from "@/lib/booking-catalog";
 
@@ -25,5 +21,5 @@ export const metadata: Metadata = {
 };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const offerings = await getOfferings();
-  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><Header />{children}<Footer /><LeadDialog catalog={bookingCatalog(offerings)} /></StoreProvider></body></html>;
+  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><Header />{children}<Footer /><BookingDialog catalog={bookingCatalog(offerings)} /></StoreProvider></body></html>;
 }

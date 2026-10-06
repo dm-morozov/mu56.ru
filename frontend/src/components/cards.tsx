@@ -23,13 +23,13 @@ export function CharacterCard({ character, index = 0 }: { character: Character; 
   </article>;
 }
 
-export function PackageCard({ offering, offerings, featured = false }: { offering: Offering; offerings: Offering[]; featured?: boolean }) {
+export function PackageCard({ offering, offerings, featured = false, aboveFold = false }: { offering: Offering; offerings: Offering[]; featured?: boolean; aboveFold?: boolean }) {
   const price = basePrice(offering);
   const timing = packageTiming(offering);
   const photo = packageImage(offering.slug);
   const timeBadge = <span className={photo ? "show-time package-time" : "small-badge"}><Clock3 size={14} /> {timing.approximate ? "≈ " : ""}{timing.active ? duration(timing.active) : "Время согласуем"} · игры и шоу</span>;
   return <article className={`package-card ${featured ? "featured" : ""}`}>
-    {photo && <Link href={offeringUrl(offering.kind, offering.slug)} className="package-photo" aria-label={`Состав пакета «${offering.name}»`}><Image src={photo} alt={offering.name} width={600} height={400} sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 400px" />{timeBadge}{featured && <span className="package-star"><Sparkles size={21} /></span>}</Link>}
+    {photo && <Link href={offeringUrl(offering.kind, offering.slug)} className="package-photo" aria-label={`Состав пакета «${offering.name}»`}><Image src={photo} alt={offering.name} width={600} height={400} sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 400px" loading={aboveFold ? "eager" : "lazy"} fetchPriority={aboveFold ? "high" : "auto"} />{timeBadge}{featured && <span className="package-star"><Sparkles size={21} /></span>}</Link>}
     <div className="package-card-copy">
     {!photo && <div className="package-top">{timeBadge}{featured && <span className="package-star"><Sparkles size={21} /></span>}</div>}
     <h3><Link href={offeringUrl(offering.kind, offering.slug)}>{offering.name}</Link></h3>
