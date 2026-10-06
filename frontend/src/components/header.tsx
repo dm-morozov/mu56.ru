@@ -23,7 +23,7 @@ export function Header() {
     <header className="header"><div className="container header-inner">
       <Link href="/" className="brand" aria-label="Мир Улыбок — главная" onClick={() => setOpen(false)}><Brand /></Link>
       <nav id="main-navigation" aria-label="Основное меню" className={open ? "nav is-open" : "nav"}>{links.map(([url, text]) => <Link key={url} href={url} className={url === "/new-year" ? "nav-seasonal" : undefined} aria-current={pathname.startsWith(url) ? "page" : undefined} onClick={() => setOpen(false)}>{text}</Link>)}{moreLinks.map(([url, text]) => <Link key={url} href={url} className="mobile-gallery" aria-current={pathname.startsWith(url) ? "page" : undefined} onClick={() => setOpen(false)}>{text}</Link>)}<MessengerLinks className="menu-messengers" /></nav>
-      <div className="header-contacts"><a className="header-phone" href="tel:+79033922229" aria-label="Позвонить: +7 903 392-22-29"><Phone size={17} /> <span>+7 903 392-22-29</span></a><MessengerLinks className="header-messengers" iconsOnly /></div>
+      <div className="header-contacts"><MessengerLinks className="header-messengers" iconsOnly /><a className="header-phone" href="tel:+79033922229" aria-label="Позвонить: +7 903 392-22-29"><Phone size={17} /> <span>+7 903 392-22-29</span></a></div>
       <button ref={buttonRef} className="menu-button" aria-label={open ? "Закрыть меню" : "Открыть меню"} aria-controls="main-navigation" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
     </div></header>
   </>;
