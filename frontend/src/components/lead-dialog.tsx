@@ -1,25 +1,34 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Phone, X } from "lucide-react";
 import { HeroPicker } from "./hero-picker";
 import { ShowAddon } from "./show-addon";
+import { PackagePart } from "./package-part";
 import { PhoneInput } from "./phone-input";
 import { close, useAppDispatch, useSelection } from "./store-provider";
-import { Offering, basePrice, rubles } from "@/lib/types";
+import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
+import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
 type Quote = { amount_rub: number; lines: {slug: string; name: string; amount_rub: number}[] };
+const programGroups = [["transformer", "Большие герои"], ["package", "Готовые пакеты"], ["animation", "Анимация"], ["seasonal", "Новый год"], ["show", "Отдельные шоу"], ["extra", "Дополнения"]];
+const eveningSlots: Record<string, string> = {"eve-18":"31 декабря · 18:00", "eve-20":"31 декабря · 20:00", "eve-22":"31 декабря · 22:00", "night-00":"1 января · 00:00", "night-02":"1 января · 02:00"};
+const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
-export function LeadDialog({ offerings }: { offerings: Offering[] }) {
+export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
+  const offerings = useMemo(() => bookingOfferings(catalog), [catalog]);
   const ref = useRef<HTMLDialogElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
   const selection = useSelection(), dispatch = useAppDispatch();
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [success, setSuccess] = useState(false);
   const [programSlug, setProgramSlug] = useState(""), [heroSlug, setHeroSlug] = useState("");
+  const [eventDate, setEventDate] = useState(""), [eventTime, setEventTime] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [tariffCode, setTariffCode] = useState("");
   const [secondPerformer, setSecondPerformer] = useState(false);
+  const [secondHeroSlug, setSecondHeroSlug] = useState("");
   const [addons, setAddons] = useState<string[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null), [quoteError, setQuoteError] = useState("");
   const [quoteAttempt, setQuoteAttempt] = useState(0);
@@ -32,16 +41,35 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
   const packageBase = packaged ? basePrice(program) : undefined;
   const secondTariff = packaged ? program.prices.find(price => price.context === "second_performer") : undefined;
   const packageAmount = packageBase === undefined ? undefined : packageBase + (secondPerformer && secondTariff ? secondTariff.amount_rub : 0);
+  const soundIncluded = program?.slug === "foam" || program?.parts.some(part => part.service_slug === "foam") || addons.includes("foam") || (program?.kind === "seasonal" && tariffCode === "group-with-sound");
+  const selectedExtras = offerings.filter(item => addonOnly(item.slug) && addons.includes(item.slug));
+  const extraAmount = selectedExtras.reduce((sum, item) => sum + (basePrice(item) ?? 0), 0);
+  const extrasKnown = selectedExtras.every(item => basePrice(item) !== undefined);
+  const photographer = selectedExtras.find(item => item.slug === "photographer");
+  const simpleBase = packaged ? packageAmount : program?.kind === "seasonal" ? program.prices.find(price => price.code === tariffCode)?.amount_rub : program ? basePrice(program) : undefined;
+  const seasonalShows = program?.kind === "seasonal" ? offerings.filter(item => item.kind === "show" && addons.includes(item.slug)) : [];
+  const seasonalShowAmount = seasonalShows.reduce((sum, show) => sum + (twoPerformerShowPrice(show) ?? 0), 0);
+  const showsKnown = seasonalShows.every(show => twoPerformerShowPrice(show) !== undefined);
+  const allAddonsPriced = addons.every(slug => addonOnly(slug) || seasonalShows.some(show => show.slug === slug));
+  const simpleTotal = simpleBase !== undefined && extrasKnown && showsKnown && allAddonsPriced ? simpleBase + extraAmount + seasonalShowAmount : undefined;
+  const eveningSlot = eveningSlots[tariffCode];
+  const monthDay = eventDate.slice(5);
+  const specialNight = monthDay === "12-31" && (!eventTime || eventTime >= "18:00") || monthDay === "01-01" && (!eventTime || eventTime <= "04:00");
+  const expectedDay = tariffCode.startsWith("eve-") ? "12-31" : "01-01";
+  const expectedTime = `${tariffCode.slice(-2)}:00`;
+  const scheduleError = program?.kind !== "seasonal" ? "" : eveningSlot
+    ? monthDay !== expectedDay || eventTime !== expectedTime ? `Укажите дату и точное начало: ${eveningSlot}, по Оренбургу.` : ""
+    : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
   useEffect(() => {
-    if (selection.open) { setSuccess(false); setError(""); setSecondPerformer(false); setAddons(selection.addons || []); setQuote(null); setProgramSlug(selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
+    if (selection.open) { setEventDate(""); setEventTime(""); setDetailsOpen(!!(selection.offering || selection.character || selection.tariff || selection.addons?.length)); setSuccess(false); setError(""); setSecondPerformer(false); setSecondHeroSlug(""); setAddons(addonOnly(selection.offering) ? [...new Set([...(selection.addons || []), selection.offering])] : selection.addons || []); setQuote(null); setProgramSlug(addonOnly(selection.offering) ? "animation" : selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
     else ref.current?.close();
   }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons]);
   useEffect(() => {
     setQuote(null); setQuoteError("");
     if (!selection.open || !pricedComposition) return;
     const controller = new AbortController();
-    const params = new URLSearchParams({ offering: programSlug, addons: addons.join(",") });
+    const params = new URLSearchParams({ offering: programSlug, addons: addons.filter(slug => slug !== "photographer").join(",") });
     fetch(`/api/v1/${animation ? "animation" : "transformer"}-quote/?${params}`, {cache:"no-store", signal:controller.signal})
       .then(async response => { const data = await response.json().catch(() => { throw new Error("Не удалось рассчитать стоимость. Попробуйте выбрать программу ещё раз или позвоните нам."); }); if (!response.ok) throw new Error(data.detail || "Не удалось рассчитать стоимость."); return data as Quote; })
       .then(data => { if (!controller.signal.aborted) setQuote(data); })
@@ -49,9 +77,10 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
     return () => controller.abort();
   }, [selection.open, pricedComposition, animation, programSlug, addons, quoteAttempt]);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
+  useEffect(() => { if (soundIncluded) setAddons(current => current.includes("sound") ? current.filter(slug => slug !== "sound") : current); }, [soundIncluded]);
   useEffect(() => { if (success) successRef.current?.focus(); }, [success]);
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy || (pricedComposition && !quote)) return;
+    event.preventDefault(); if (busy || scheduleError || (pricedComposition && !quote)) return;
     const form = event.currentTarget, data = new FormData(form);
     let requestSent = false;
     setBusy(true); setError("");
@@ -63,12 +92,13 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
       const compatibleCharacter = availableHeroes.some(item => item.slug === heroSlug) && (!selectedOffering || selectedOffering.characters.some(item => item.slug === heroSlug));
       const payload = {
         name: data.get("name"), phone: data.get("phone"), contact_method: data.get("contact_method"),
-        event_date: data.get("event_date") || null, comment: data.get("comment"),
+        event_date: data.get("event_date") || null, event_time: data.get("event_time") || null, comment: data.get("comment"),
         offering: data.get("offering") || null,
         tariff_code: selectedOffering?.kind === "seasonal" ? tariffCode : "",
         character: compatibleCharacter ? heroSlug || null : null,
-        addons: pricedComposition || selectedOffering?.kind === "seasonal" ? addons : [],
+        addons: selectedOffering ? addons : [],
         second_performer: !!packaged && secondPerformer && !!secondTariff,
+        second_character: packaged && secondPerformer && secondTariff && availableHeroes.some(hero => hero.slug === secondHeroSlug) ? secondHeroSlug || null : null,
         data_consent: data.get("data_consent") === "on", website: data.get("website") || "",
       };
       requestSent = true;
@@ -96,30 +126,51 @@ export function LeadDialog({ offerings }: { offerings: Offering[] }) {
   }}>
     <button className="dialog-close" aria-label="Закрыть форму" disabled={busy} onClick={() => dispatch(close())}><X /></button>
     {success ? <div className="form-success"><span><Check /></span><h2 id="lead-success-title" ref={successRef} tabIndex={-1}>Первый шаг к празднику сделан!</h2><p>Заявка сохранена. Обсудим с вами дату, программу и выезд.</p><button className="button orange" onClick={() => dispatch(close())}>Отлично</button></div> : <>
-      <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">Поможем выбрать программу и согласуем свободную дату.</p>
+      <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">{detailsOpen ? "Выберите состав праздника. Дату и детали согласуем с вами." : "Оставьте телефон — поможем выбрать программу. Дату и героя можно решить вместе."}</p>
       <form onSubmit={submit}>
         <fieldset className="lead-fields" disabled={busy}>
         <div className="form-row"><label>Ваше имя<input name="name" autoComplete="given-name" maxLength={100} placeholder="Как к вам обращаться" /></label><label>Телефон<PhoneInput /></label></div>
-        <div className="form-row"><label>Как связаться<select name="contact_method"><option value="phone">Позвонить</option><option value="telegram">Telegram</option><option value="max">MAX</option></select></label><label>Дата праздника<input name="event_date" type="date" /></label></div>
-        <label>{transformer ? "Большой герой и программа" : "Программа"}<select name="offering" value={programSlug} onChange={event => { const slug = event.target.value; setProgramSlug(slug); setSecondPerformer(false); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }}><option value="">Пока не знаю — помогите выбрать</option>{offerings.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></label>
-        {availableHeroes.length > 0 && <HeroPicker key={`${selection.open}-${programSlug}`} heroes={availableHeroes} value={heroSlug} onChange={setHeroSlug} label={transformer ? "Второй герой (обычный костюм)" : "Герой анимации"} />}
-        {transformer && <p className="lead-choice-note"><strong>{program.characters.find(hero => hero.slug === program.slug)?.name || program.name}</strong> + второй герой в обычном костюме. Оба участника уже входят в цену{basePrice(program) ? ` — ${rubles(basePrice(program)!)} за программу` : ""}.<br />Несколько больших героев? Напишите об этом в пожеланиях — состав и цену обсудим отдельно.</p>}
+        <label>Как связаться<select name="contact_method"><option value="phone">Позвонить</option><option value="telegram">Telegram</option><option value="max">MAX</option></select></label>
+        <button type="button" className="lead-details-toggle" aria-expanded={detailsOpen} aria-controls="lead-program-details" onClick={() => setDetailsOpen(value => !value)}><span>{detailsOpen ? "Свернуть детали праздника" : "Указать дату и выбрать программу"}<small>{detailsOpen ? "Ваш выбор сохранится в заявке" : "Необязательно — можно обсудить с нами"}</small></span><span aria-hidden="true">{detailsOpen ? "−" : "+"}</span></button>
+        {!detailsOpen && program && <p className="lead-selection-summary">Выбрано: {program.name}{heroSlug ? ` · ${availableHeroes.find(hero => hero.slug === heroSlug)?.name || "герой выбран"}` : ""}{addons.length ? ` · дополнений: ${addons.length}` : ""}. Детали сохранены.</p>}
+        <div id="lead-program-details" hidden={!detailsOpen}>
+        <div className="form-row"><label>Дата праздника<input name="event_date" type="date" value={eventDate} onInput={event => setEventDate(event.currentTarget.value)} onChange={event => setEventDate(event.target.value)} /></label><label>Время начала программы<input name="event_time" type="time" value={eventTime} onInput={event => setEventTime(event.currentTarget.value)} onChange={event => setEventTime(event.target.value)} aria-describedby="event-time-help" /></label></div>
+        <p id="event-time-help" className="hero-picker-help event-time-help">Время по Оренбургу. Начало программы лучше планировать на 15 минут позже сбора гостей.</p>
+        <label>{transformer ? "Большой герой и программа" : "Программа"}<select name="offering" value={programSlug} onChange={event => { const slug = event.target.value; setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }}><option value="">Пока не знаю — помогите выбрать</option>{programGroups.map(([kind, label]) => { const items = offerings.filter(item => item.kind === kind && !addonOnly(item.slug)); return items.length > 0 && <optgroup key={kind} label={label}>{items.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}</optgroup>; })}</select></label>
+        {packaged && <section className="lead-package" aria-labelledby="lead-package-title">
+          <h3 id="lead-package-title">{program.name}<span>{packageBase === undefined ? "Стоимость уточним" : rubles(packageBase)}</span></h3>
+          <fieldset className="lead-addons package-inclusions" aria-labelledby="package-inclusions-title"><h4 id="package-inclusions-title">В программу входит</h4><p>Все пункты включены в пакет. Чтобы изменить состав, выберите другую программу.</p>{program.parts.map(part => <PackagePart key={`${program.slug}-${part.position}`} part={part} description={!part.led_by_performer ? "После анимации и шоу колонка продолжает играть фоновую музыку, пока аниматоры собирают всё оборудование на вашем празднике. Колонку забирают в последнюю очередь, когда остальное оборудование уже сложено. В это время ведущие не проводят игры, конкурсы и шоу." : offerings.find(item => item.slug === part.service_slug)?.description} />)}</fieldset>
+          <p className="hero-picker-help">Звук и стоимость выезда согласуем отдельно до праздника.</p>
+        </section>}
+        {availableHeroes.length > 0 && <HeroPicker key={`${selection.open}-${programSlug}`} heroes={availableHeroes} value={heroSlug} onChange={setHeroSlug} label={transformer ? "Второй герой" : "Герой анимации"} />}
+        {transformer && <p className="lead-choice-note"><strong>{program.characters.find(hero => hero.slug === program.slug)?.name || program.name}</strong> + второй герой. Оба входят в цену{basePrice(program) ? ` — ${rubles(basePrice(program)!)} за программу` : ""}.<br />Хотите двух трансформеров? Напишите в пожеланиях — цену обсудим.</p>}
         {packaged && <>
-          <fieldset className="lead-addons"><legend>Состав команды</legend><p>В базовую цену {program.included_performers === 1 ? "входит один аниматор" : `входят участники команды: ${program.included_performers}`}. Героя выберите выше; пожелания ко второму герою можно написать ниже.</p>{secondTariff ? <label><input type="checkbox" name="second_performer" checked={secondPerformer} onChange={event => setSecondPerformer(event.target.checked)} /><span>Добавить второго аниматора<small>+ {rubles(secondTariff.amount_rub)}</small></span></label> : <p>Дополнительного ведущего и стоимость согласуем отдельно.</p>}</fieldset>
-          <div className="lead-quote" aria-live="polite" aria-atomic="true">{packageAmount !== undefined ? <><strong>Предварительно: {rubles(packageAmount)}</strong><ul><li>{program.name}<span>{rubles(packageBase!)}</span></li>{secondPerformer && secondTariff && <li>Второй аниматор<span>{rubles(secondTariff.amount_rub)}</span></li>}</ul></> : <strong>Стоимость уточним</strong>}<p>Состав, итоговую цену, звук и стоимость выезда согласуем до праздника. Фоновая музыка после программы — без ведущего.</p></div>
+          <fieldset className="lead-addons"><legend>Состав команды</legend><p>В базовую цену {program.included_performers === 1 ? "входит один аниматор" : `входят участники команды: ${program.included_performers}`}. Первого героя выберите выше. Второй аниматор участвует в анимации и шоу; фоновая музыка в конце — без ведущих.</p>{secondTariff ? <label><input type="checkbox" name="second_performer" checked={secondPerformer} onChange={event => { setSecondPerformer(event.target.checked); setSecondHeroSlug(""); }} /><span>Добавить второго аниматора на всю программу<small>+ {rubles(secondTariff.amount_rub)}</small></span></label> : <p>Дополнительного ведущего и стоимость согласуем отдельно.</p>}</fieldset>
+          {secondPerformer && secondTariff && <HeroPicker heroes={availableHeroes} value={secondHeroSlug} onChange={setSecondHeroSlug} label="Второй герой" />}
+
         </>}
         {pricedComposition && <>
-          <fieldset className="lead-addons"><legend>Продолжить праздник шоу</legend><p>Можно выбрать несколько. {transformer ? "Каждое шоу проводят оба аниматора. Перед шоу они переодеваются в специальные костюмы для выбранной программы. Доплата уже включает шоу и работу двух аниматоров." : "Анимация оплачивается один раз. Шоу добавляются по цене с анимацией; время шоу продлевает программу."}</p>{(animation ? offerings.filter(item => item.kind === "show") : availableShows).map(show => { const amount = animation ? (show.prices.find(price => price.context === "with_animation")?.amount_rub ?? basePrice(show)) : show.prices.filter(price => ["with_animation", "transformer_support"].includes(price.context)).reduce((sum,price) => sum + price.amount_rub,0); return <ShowAddon key={`${programSlug}-${show.slug}`} show={show} checked={addons.includes(show.slug)} onChange={checked => { setQuote(null); setAddons(current => checked ? [...current,show.slug] : current.filter(slug => slug !== show.slug)); }} price={`${amount === undefined ? "Цену уточним" : `+ ${rubles(amount)}`}${transformer ? " · шоу с двумя аниматорами" : ""}`} />; })}</fieldset>
-          <div className="lead-quote" aria-live="polite" aria-atomic="true">{quote ? <><strong>Предварительно: {rubles(quote.amount_rub)}</strong><ul>{quote.lines.map(line => <li key={line.slug}>{line.name}<span>{rubles(line.amount_rub)}</span></li>)}</ul><p>Состав, итоговую цену и стоимость выезда согласуем с вами до праздника.</p></> : <><p>{quoteError || "Рассчитываем стоимость…"}</p>{quoteError && <button type="button" className="button outline quote-retry" onClick={() => setQuoteAttempt(value => value + 1)}>Повторить расчёт</button>}</>}</div>
+          <fieldset className="lead-addons"><legend>Добавить шоу</legend><p>Можно выбрать несколько. {transformer ? "Шоу ведут два аниматора в специальных костюмах. Их работа включена в доплату." : "Шоу продлевают праздник. Анимация оплачивается один раз."}</p>{animation && addons.includes("foam") && <p>Комплект звука уже включён в пенную вечеринку.</p>}{(animation ? offerings.filter(item => item.kind === "show") : availableShows).map(show => { const amount = show.slug === "sound" ? basePrice(show) : animation ? (show.prices.find(price => price.context === "with_animation")?.amount_rub ?? basePrice(show)) : show.prices.filter(price => ["with_animation", "transformer_support"].includes(price.context)).reduce((sum,price) => sum + price.amount_rub,0); return <ShowAddon key={`${programSlug}-${show.slug}`} show={show} checked={addons.includes(show.slug)} onChange={checked => { setQuote(null); setAddons(current => checked ? [...current.filter(slug => show.slug !== "foam" || slug !== "sound"),show.slug] : current.filter(slug => slug !== show.slug)); }} performers={transformer && show.kind === "show" ? 2 : undefined} price={`${amount === undefined ? "Цену уточним" : `+ ${rubles(amount)}`}`} />; })}</fieldset>
+
         </>}
-        {program?.kind === "seasonal" && <label>Формат новогоднего поздравления<select value={tariffCode} onChange={event => setTariffCode(event.target.value)}><option value="">Помогите выбрать</option>{program.prices.map(price => <option key={price.code} value={price.code}>{price.code === "group-with-sound" ? "Час и комплект звука" : `${price.duration_minutes} минут · два героя`} — {rubles(price.amount_rub)}</option>)}</select></label>}
-        {program?.kind === "seasonal" && <fieldset className="lead-addons"><legend>Продолжить новогодний праздник</legend><p>После поздравления оба аниматора переодеваются в специальные костюмы и проводят выбранное шоу вдвоём. Стоимость согласуем отдельно.</p>{offerings.filter(show => ["nitrogen", "silver", "cotton-candy-show"].includes(show.slug)).map(show => <ShowAddon key={`${programSlug}-${show.slug}`} show={show} checked={addons.includes(show.slug)} onChange={checked => setAddons(current => checked ? [...current, show.slug] : current.filter(slug => slug !== show.slug))} />)}</fieldset>}
+        {program?.kind === "seasonal" && <label>Формат новогоднего поздравления<select value={tariffCode} onChange={event => { setTariffCode(event.target.value); if (eveningSlots[event.target.value]) setAddons(current => current.filter(addonOnly)); }}><option value="">Помогите выбрать</option>{program.prices.map(price => <option key={price.code} value={price.code}>{eveningSlots[price.code] ? `${eveningSlots[price.code]} · 50 минут` : price.code === "group-with-sound" ? "Час и комплект звука" : `${price.duration_minutes} минут · два героя`} — {rubles(price.amount_rub)}</option>)}</select></label>}
+        {program?.kind === "seasonal" && <p className="hero-picker-help">Подарки передают родители. 31 декабря с 18:00 и новогодней ночью — только сказка на 50 минут по точным часам. Для вечернего тарифа укажите дату и время начала, соответствующие его названию. Свободный выезд подтвердим лично.</p>}
+        {program?.kind === "seasonal" && !eveningSlot && <fieldset className="lead-addons"><legend>Продолжить новогодний праздник</legend><p>После поздравления оба аниматора переодеваются в специальные костюмы и проводят выбранное шоу вдвоём. Работа двух аниматоров включена в доплату.</p>{offerings.filter(show => ["nitrogen", "silver", "cotton-candy-show"].includes(show.slug)).map(show => <ShowAddon key={`${programSlug}-${show.slug}`} show={show} performers={2} price={twoPerformerShowPrice(show) === undefined ? "Цену уточним" : `+ ${rubles(twoPerformerShowPrice(show)!)}`} checked={addons.includes(show.slug)} onChange={checked => setAddons(current => checked ? [...current, show.slug] : current.filter(slug => slug !== show.slug))} />)}</fieldset>}
         {program?.kind === "show" && <div className="lead-quote"><strong>{basePrice(program) === undefined ? "Цену уточним" : `Шоу отдельно: ${rubles(basePrice(program)!)}`}</strong><p>Анимация в этот вариант не входит. Если нужен герой и игры, выберите программу «Аниматор на праздник» и отметьте шоу.</p></div>}
-        <label>Пожелания<textarea name="comment" maxLength={2000} placeholder="Возраст ребёнка, любимый герой, сколько будет гостей…" rows={3} /></label>
+        {program && <fieldset className="lead-addons"><legend>Дополнения к программе</legend>{offerings.filter(item => addonOnly(item.slug)).map(item => <ShowAddon key={`${programSlug}-${item.slug}`} show={item} checked={item.slug === "sound" && soundIncluded || addons.includes(item.slug)} disabled={item.slug === "sound" && soundIncluded} price={item.slug === "sound" && soundIncluded ? "Уже включён в программу" : basePrice(item) === undefined ? "Стоимость согласуем" : `+ ${rubles(basePrice(item)!)}${item.slug === "photographer" && item.duration_minutes ? ` / ${duration(item.duration_minutes)}` : ""}`} onChange={checked => { setQuote(null); setAddons(current => checked ? [...current, item.slug] : current.filter(slug => slug !== item.slug)); }} />)}</fieldset>}
+        </div>
+        {pricedComposition && <div className="lead-quote" aria-live="polite" aria-atomic="true">{quote ? <><strong>{extrasKnown ? `Предварительно: ${rubles(quote.amount_rub + (photographer ? basePrice(photographer)! : 0))}` : "Стоимость с фотографом уточним"}</strong><ul>{quote.lines.map(line => {
+            const item = offerings.find(offering => offering.slug === line.slug);
+            const timedProgram = transformer && item && ["transformer", "show"].includes(item.kind);
+            return <li key={line.slug}><span className="lead-quote-copy"><span>{line.name}</span>{timedProgram && <small>{item.duration_is_approximate ? "≈ " : ""}{duration(item.duration_minutes)} · 2 {item.kind === "transformer" ? "героя" : "аниматора"}</small>}</span><span className="lead-quote-amount">{rubles(line.amount_rub)}</span></li>;
+          })}{photographer && <li><span>{photographer.name}</span><span>{basePrice(photographer) === undefined ? "Цену уточним" : rubles(basePrice(photographer)!)}</span></li>}</ul><p>Итоговую цену и выезд согласуем до праздника.</p></> : <><p>{quoteError || "Рассчитываем стоимость…"}</p>{quoteError && <button type="button" className="button outline quote-retry" onClick={() => setQuoteAttempt(value => value + 1)}>Повторить расчёт</button>}</>}</div>}
+        {scheduleError && <p className="form-error" role="status">{scheduleError}{!detailsOpen && " Разверните детали праздника, чтобы изменить выбор."}</p>}
+        {program && !scheduleError && !pricedComposition && (packaged || program.kind === "seasonal" || selectedExtras.length > 0 || secondPerformer) && <div className="lead-quote" aria-live="polite"><strong>{simpleTotal === undefined ? "Итоговую стоимость согласуем" : `Всего за программу: ${rubles(simpleTotal)}`}</strong><ul><li>{program.name}<span>{(packaged ? packageBase : simpleBase) === undefined ? "Цену уточним" : rubles((packaged ? packageBase : simpleBase)!)}</span></li>{seasonalShows.map(show => <li key={show.slug}><span className="lead-quote-copy"><span>{show.name}</span><small>{show.duration_is_approximate ? "≈ " : ""}{duration(show.duration_minutes)} · 2 аниматора</small></span><span>{twoPerformerShowPrice(show) === undefined ? "Цену уточним" : rubles(twoPerformerShowPrice(show)!)}</span></li>)}{packaged && program.parts.map(part => <li key={`included-${part.position}`}><span className="lead-quote-copy"><span>{part.title}</span><small>{part.is_approximate ? "≈ " : ""}{part.duration_minutes} мин</small></span><span className="lead-quote-amount">Включено</span></li>)}{packaged && soundIncluded && <li>Много звука<span>Включено</span></li>}{secondPerformer && secondTariff && <li>Второй аниматор на всю программу<span>{rubles(secondTariff.amount_rub)}</span></li>}{selectedExtras.map(item => <li key={item.slug}>{item.name}<span>{basePrice(item) === undefined ? "Цену уточним" : rubles(basePrice(item)!)}</span></li>)}</ul><p>{secondPerformer && "В стоимость программы включён второй аниматор. "}Стоимость выезда согласуем отдельно.</p></div>}
+        <label>Пожелания <span className="field-optional">(необязательно)</span><textarea name="comment" maxLength={2000} placeholder="Возраст ребёнка, любимый герой, сколько будет гостей…" rows={3} /></label>
         <div className="honeypot" aria-hidden="true"><label>Ваш сайт<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
         <label className="consent"><input name="data_consent" type="checkbox" required /><span>Согласен на <Link href="/privacy" target="_blank" rel="noopener noreferrer">обработку данных</Link> для связи по заявке</span></label>
         {error && <p ref={errorRef} tabIndex={-1} className="form-error" role="alert">{error}</p>}
-        <button className="button orange form-submit" disabled={busy || (!!pricedComposition && !quote)}>{busy ? "Отправляем…" : "Обсудить мой праздник"}</button>
+        <button className="button orange form-submit" disabled={busy || !!scheduleError || (!!pricedComposition && !quote)}>{busy ? "Отправляем…" : "Обсудить мой праздник"}</button>
         <a className="form-phone" href="tel:+79033922229"><Phone size={16} /> Можно просто позвонить: +7 903 392-22-29</a>
         </fieldset>
       </form>

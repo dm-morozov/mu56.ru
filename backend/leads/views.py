@@ -1,6 +1,7 @@
 from io import BytesIO
 
 from django.conf import settings
+from django.db.models import Q
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -32,16 +33,17 @@ def quote_transformer(request):
     if set(query) - {"offering", "addons"} or any(len(query.getlist(key)) != 1 for key in query):
         return JsonResponse({"detail": "Укажите программу и разные шоу."}, status=400)
     addon_slugs = query.get("addons", "").split(",") if query.get("addons") else []
-    if len(addon_slugs) > 3 or len(set(addon_slugs)) != len(addon_slugs):
-        return JsonResponse({"detail": "Выберите разные шоу, не более трёх."}, status=400)
+    if len(addon_slugs) > 4 or len(set(addon_slugs)) != len(addon_slugs):
+        return JsonResponse({"detail": "Выберите разные шоу, не более четырёх."}, status=400)
     try:
         program = Offering.objects.get(slug=query.get("offering", ""), kind=Offering.Kind.TRANSFORMER, is_listed=True)
         if program.availability == Availability.UNAVAILABLE:
             raise ValueError()
-        shows = list(Offering.objects.filter(slug__in=addon_slugs, kind=Offering.Kind.SHOW, is_listed=True).exclude(availability=Availability.UNAVAILABLE))
+        shows = list(Offering.objects.filter(Q(kind=Offering.Kind.SHOW) | Q(kind=Offering.Kind.EXTRA, slug="sound"), slug__in=addon_slugs, is_listed=True).exclude(availability=Availability.UNAVAILABLE))
         if len(shows) != len(addon_slugs):
             raise ValueError()
-        return JsonResponse(transformer_quote(program, shows))
+        by_slug = {item.slug: item for item in shows}
+        return JsonResponse(transformer_quote(program, [by_slug[slug] for slug in addon_slugs]))
     except (Offering.DoesNotExist, ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
         return JsonResponse({"detail": "Этот состав требует уточнения цены. Выберите другое шоу или опишите пожелания."}, status=400)
 
@@ -54,16 +56,17 @@ def quote_animation(request):
     if set(query) - {"offering", "addons"} or any(len(query.getlist(key)) != 1 for key in query):
         return JsonResponse({"detail": "Укажите программу и разные шоу."}, status=400)
     addon_slugs = query.get("addons", "").split(",") if query.get("addons") else []
-    if len(addon_slugs) > 6 or len(set(addon_slugs)) != len(addon_slugs):
-        return JsonResponse({"detail": "Выберите разные шоу, не более шести."}, status=400)
+    if len(addon_slugs) > 7 or len(set(addon_slugs)) != len(addon_slugs):
+        return JsonResponse({"detail": "Выберите разные шоу, не более семи."}, status=400)
     try:
         program = Offering.objects.get(slug=query.get("offering", ""), kind=Offering.Kind.ANIMATION, is_listed=True)
         if program.availability == Availability.UNAVAILABLE:
             raise ValueError()
-        shows = list(Offering.objects.filter(slug__in=addon_slugs, kind=Offering.Kind.SHOW, is_listed=True).exclude(availability=Availability.UNAVAILABLE))
+        shows = list(Offering.objects.filter(Q(kind=Offering.Kind.SHOW) | Q(kind=Offering.Kind.EXTRA, slug="sound"), slug__in=addon_slugs, is_listed=True).exclude(availability=Availability.UNAVAILABLE))
         if len(shows) != len(addon_slugs):
             raise ValueError()
-        return JsonResponse(animation_quote(program, shows))
+        by_slug = {item.slug: item for item in shows}
+        return JsonResponse(animation_quote(program, [by_slug[slug] for slug in addon_slugs]))
     except (Offering.DoesNotExist, ValueError, PriceOption.DoesNotExist, PriceOption.MultipleObjectsReturned):
         return JsonResponse({"detail": "Этот состав требует уточнения цены. Выберите другое шоу или опишите пожелания."}, status=400)
 

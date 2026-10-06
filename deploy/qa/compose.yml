@@ -1,0 +1,34 @@
+name: mu56-linux-qa
+services:
+  database:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: qa_bootstrap
+      POSTGRES_PASSWORD: isolated-qa-only-not-production
+      POSTGRES_DB: mu56_qa
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qa_bootstrap -d mu56_qa"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - database:/var/lib/postgresql
+  acceptance:
+    build:
+      context: ../..
+      dockerfile: deploy/qa/Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      PGHOST: database
+      PGPORT: "5432"
+      PGDATABASE: mu56_qa
+      QA_KEEP_RUNNING: ${QA_KEEP_RUNNING:-0}
+    volumes:
+      - ${QA_CATALOG:?Set QA_CATALOG to an exported catalog directory}:/catalog:ro
+      - ${QA_REPORT:?Set QA_REPORT to a private report directory}:/report
+    ports:
+      - "127.0.0.1:18444:443"
+volumes:
+  database:

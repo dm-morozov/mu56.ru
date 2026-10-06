@@ -11,6 +11,7 @@ import { Footer } from "@/components/footer";
 import { StoreProvider } from "@/components/store-provider";
 import { LeadDialog } from "@/components/lead-dialog";
 import { getOfferings } from "@/lib/catalog";
+import { bookingCatalog } from "@/lib/booking-catalog";
 
 import { StructuredData } from "@/components/structured-data";
 import { organization, siteOrigin, indexingEnabled } from "@/lib/seo";
@@ -24,5 +25,5 @@ export const metadata: Metadata = {
 };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const offerings = await getOfferings();
-  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><Header />{children}<Footer /><LeadDialog offerings={offerings} /></StoreProvider></body></html>;
+  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><Header />{children}<Footer /><LeadDialog catalog={bookingCatalog(offerings)} /></StoreProvider></body></html>;
 }

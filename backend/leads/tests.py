@@ -56,26 +56,26 @@ class PublicAPITests(TestCase):
         self.assertEqual(self.client.get("/api/v1/animation-quote/?offering=animation&addons=silver").status_code, 400)
 
     def test_new_year_selected_format_preserves_duration_and_price(self):
-        payload = {**self.payload, "offering": "new-year", "character": None, "addons": [], "tariff_code": "minutes-55"}
+        payload = {**self.payload, "offering": "new-year", "character": None, "addons": [], "tariff_code": "minutes-50"}
         self.assertEqual(self.submit(payload).status_code, 201)
         lead = Lead.objects.latest("created_at")
-        self.assertEqual(lead.selection_snapshot["selected_tariff"], {"code": "minutes-55", "duration_minutes": 55, "amount_rub": 6000})
+        self.assertEqual(lead.selection_snapshot["selected_tariff"], {"code": "minutes-50", "duration_minutes": 50, "amount_rub": 6000})
         self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 6000)
-        tariff = Offering.objects.get(slug="new-year").prices.get(code="minutes-55")
+        tariff = Offering.objects.get(slug="new-year").prices.get(code="minutes-50")
         tariff.amount_rub = 7000
         tariff.save()
         lead.refresh_from_db()
         self.assertEqual(lead.selection_snapshot["selected_tariff"]["amount_rub"], 6000)
-        self.assertIn("55 минут", notification_payload(lead, 123456)["text"])
+        self.assertIn("50 минут", notification_payload(lead, 123456)["text"])
 
-    def test_new_year_rejects_retired_format_and_keeps_addons_without_false_total(self):
+    def test_new_year_rejects_retired_format_and_prices_group_show(self):
         payload = {**self.payload, "offering": "new-year", "character": None, "tariff_code": "minutes-45"}
         self.assertEqual(self.submit(payload).status_code, 400)
         payload["tariff_code"] = "group-with-sound"
         self.assertEqual(self.submit(payload).status_code, 201)
         lead = Lead.objects.latest("created_at")
         self.assertEqual(lead.selection_snapshot["selected_tariff"]["amount_rub"], 9000)
-        self.assertIsNone(lead.selection_snapshot["known_program_amount_rub"])
+        self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 13300)
         self.assertEqual(list(lead.addons.values_list("slug", flat=True)), ["silver"])
 
     def test_catalog_excludes_hidden_offerings_roles_and_draft_prices(self):
@@ -98,7 +98,7 @@ class PublicAPITests(TestCase):
         self.assertEqual(response.json()["count"], 5)
         self.assertEqual(self.client.get("/api/v1/offerings/?kind=invalid").status_code, 400)
         self.assertEqual(self.client.post("/api/v1/offerings/", {}, format="json").status_code, 405)
-        self.assertEqual(self.client.get("/api/v1/characters/").json()["count"], 35)
+        self.assertEqual(self.client.get("/api/v1/characters/").json()["count"], 32)
         contact_kinds = [item["kind"] for item in self.client.get("/api/v1/contacts/").json()]
         self.assertEqual(contact_kinds, ["phone", "telegram"])
         max_contact = ContactChannel.objects.get(kind="max")
@@ -122,6 +122,7 @@ class PublicAPITests(TestCase):
         self.assertEqual(lead.phone, "+79031112233")
         self.assertEqual(lead.status, Lead.Status.NEW)
         self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 10500)
+
         self.assertEqual(lead.character.slug, "spider-man")
         self.assertEqual(lead.addons.get().slug, "silver")
         self.assertIsNotNone(lead.consent_at)
@@ -131,6 +132,16 @@ class PublicAPITests(TestCase):
         price.save()
         lead.refresh_from_db()
         self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 10500)
+
+    def test_optional_program_start_time_is_saved_and_included_in_notification(self):
+        response = self.submit({**self.payload, "event_time": "15:30"})
+        self.assertEqual(response.status_code, 201)
+        lead = Lead.objects.get(pk=response.json()["reference"])
+        self.assertEqual(lead.event_time.strftime("%H:%M"), "15:30")
+        self.assertIn("Время: 15:30 (Оренбург)", notification_payload(lead, "test-chat")["text"])
+        cache.clear()
+        self.assertEqual(self.submit({**self.payload, "event_time": None}).status_code, 201)
+        self.assertIsNone(Lead.objects.latest("created_at").event_time)
 
     def test_package_extra_performer_uses_booklet_rounding(self):
         payload = {**self.payload, "offering": "full-party", "addons": [], "second_performer": True}
@@ -149,6 +160,29 @@ class PublicAPITests(TestCase):
         self.assertIn("Второй аниматор: да", message)
         self.assertIn("Герой: Человек-паук", message)
         self.assertIn("Предварительный расчёт: 18 200 ₽", message)
+
+    def test_package_second_hero_is_saved_in_snapshot_and_notification(self):
+        payload = {**self.payload, "offering": "full-party", "addons": [], "second_performer": True, "second_character": "batman"}
+        self.assertEqual(self.submit(payload).status_code, 201)
+        lead = Lead.objects.get()
+        self.assertEqual(lead.character.slug, "spider-man")
+        self.assertEqual(lead.second_character.slug, "batman")
+        self.assertEqual(lead.selection_snapshot["second_character"]["name"], "Бэтмен")
+        self.assertEqual(lead.selection_snapshot["known_program_amount_rub"], 18200)
+        self.assertIn("Второй герой: Бэтмен", notification_payload(lead, "test-chat")["text"])
+
+    def test_second_hero_requires_package_extra_performer_and_compatible_role(self):
+        for changes in [
+            {"offering": "full-party", "second_performer": False, "second_character": "batman"},
+            {"offering": "bumblebee", "second_character": "batman"},
+            {"offering": "full-party", "second_performer": True, "second_character": "bumblebee"},
+        ]:
+            with self.subTest(changes=changes):
+                cache.clear()
+                response = self.submit({**self.payload, "addons": [], **changes})
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("second_character", response.json())
+        self.assertFalse(Lead.objects.exists())
 
     def test_transformer_preview_all_heroes_and_combinations_without_saving(self):
         for hero, base in [("bumblebee", 6200), ("optimus-prime", 6200), ("iron-man", 5800)]:

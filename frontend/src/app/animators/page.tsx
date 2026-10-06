@@ -1,3 +1,4 @@
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,17 +23,17 @@ export default async function AnimatorsPage() {
   const animation = offerings.find(item => item.kind === "animation" && item.slug === "animation");
   if (!animation) notFound();
   const price = basePrice(animation);
-  const favourites = ["spider-man", "ninja-turtle", "chase", "nolik", "alice", "creeper"];
+  const favourites = ["spider-man", "tiktok", "captain-america", "chase"];
   const characters = favourites.flatMap(slug => animation.characters.filter(hero => hero.slug === slug));
   const packages = ["full-party", "ice-breath", "sweet-vibe"].flatMap(slug => offerings.filter(item => item.kind === "package" && item.slug === slug));
   const photos = ["spider-man", "ninja-turtle", "alice"].flatMap(slug => animation.characters.find(hero => hero.slug === slug)?.photos.slice(0, 1) || []);
   const leadPhoto = photos[0];
 
-  return <main id="main">
+  return <main id="main" className="animation-page">
     <StructuredData data={serviceSchema(animation, description)} />
-    <section className="container animation-hero">
+    <div className="animation-hero-band"><section className="container animation-hero">
       <div className="animation-hero-copy">
-        <Link href="/" className="text-link">Главная / Аниматоры</Link>
+        <Breadcrumbs current={{ label: "Аниматоры", href: "/animators" }} />
         <span className="eyebrow">Любимый герой. Настоящие впечатления.</span>
         <h1>Аниматоры на детский праздник <em>в Оренбурге</em></h1>
         <p>Пусть любимый герой станет частью дня рождения. Приедем на вашу площадку, познакомимся с детьми и увлечём их играми, заданиями и танцами.</p>
@@ -44,24 +45,24 @@ export default async function AnimatorsPage() {
         <Image src={leadPhoto?.url || characterImage("spider-man")!} alt={leadPhoto?.alt || "Аниматор Человек-паук"} width={800} height={900} sizes="(max-width: 680px) 100vw, 50vw" preload />
         <span className="animation-photo-label">Не просто встреча с героем.<br />Общее приключение!</span>
       </div>
-    </section>
+    </section></div>
 
-    <section className="container animation-program" aria-labelledby="animation-program-title">
+    <div className="animation-program-band"><section className="container animation-program" aria-labelledby="animation-program-title">
       <div className="section-head"><div><span className="eyebrow">У каждого праздника свой темп</span><h2 id="animation-program-title">Игры, в которые хочется <em>включиться</em></h2></div><p>Работаем с детьми от 2 до 16 лет. Образ, сложность заданий и темп подбираем по возрасту и интересам вашей компании.</p></div>
       <div className="animation-steps"><article><span>01</span><h3>Знакомимся</h3><p>Помогаем освоиться рядом с героем. Если ребёнок стесняется, начинаем спокойно и не заставляем участвовать.</p></article><article><span>02</span><h3>Играем вместе</h3><p>Тематические задания, подвижные игры и танцы. Меняем подачу по реакции детей и возможностям площадки.</p></article><article><span>03</span><h3>Сохраняем впечатления</h3><p>Общаемся с героем и оставляем время для ваших фотографий. Профессионального фотографа можно обсудить отдельно.</p></article></div>
-    </section>
+    </section></div>
 
     <section id="heroes" className="container animation-characters" aria-labelledby="animation-heroes-title">
-      <div className="section-head"><div><span className="eyebrow">Кого ждёт ваш ребёнок?</span><h2 id="animation-heroes-title">Начните с любимого <em>персонажа</em></h2></div><p>Посмотрите реальные костюмы и описания. Доступность выбранного героя уточним для вашей даты.</p></div>
+      <div className="section-head"><div><span className="eyebrow">Кого ждёт ваш ребёнок?</span><h2 id="animation-heroes-title">Герои для вашего <em>праздника</em></h2></div><p>Четыре варианта для знакомства — остальные герои есть в каталоге. Посмотрите реальные костюмы и описания. Доступность уточним для вашей даты.</p></div>
       <div className="character-grid">{characters.map((hero, index) => <CharacterCard key={hero.slug} character={hero} index={index} />)}</div>
       <div className="animation-section-links"><Link className="button outline" href="/characters">Посмотреть всех персонажей</Link><Link className="text-link" href="/transformers">Хотите большого робота? Посмотрите трансформеров →</Link></div>
     </section>
 
-    <section className="container animation-packages" aria-labelledby="animation-packages-title">
+    <div className="animation-packages-band"><section className="container animation-packages" aria-labelledby="animation-packages-title">
       <div className="section-head"><div><span className="eyebrow">Если хочется ещё больше</span><h2 id="animation-packages-title">Герой + шоу = <em>целый праздник</em></h2></div><p>Выберите готовую программу с анимацией и шоу. Состав, время и цена указаны в каждом пакете.</p></div>
-      <div className="package-grid inner-packages">{packages.map(item => <PackageCard key={item.slug} offering={item} featured={item.slug === "full-party"} />)}</div>
+      <div className="package-grid inner-packages">{packages.map(item => <PackageCard offerings={offerings} key={item.slug} offering={item} featured={item.slug === "full-party"} />)}</div>
       <Link href="/packages#compare" className="text-link">Сравнить все пакеты →</Link>
-    </section>
+    </section></div>
 
     <CharacterGallery name="Аниматоры" photos={photos} />
     <section className="container animation-questions"><div><span className="eyebrow">Чтобы было спокойно родителям</span><h2>Обсудим детали <em>заранее</em></h2><div className="guarantee-card"><strong>Гарантия хорошего праздника</strong><p>Оплата после праздника.<br />Не понравится — можете не платить.</p></div></div><div className="faq-list">

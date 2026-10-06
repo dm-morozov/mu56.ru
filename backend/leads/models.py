@@ -26,6 +26,7 @@ class Lead(models.Model):
     comment = models.TextField("Пожелания клиента", max_length=2000, blank=True)
     offering = models.ForeignKey("catalog.Offering", on_delete=models.PROTECT, null=True, blank=True, verbose_name="Основная программа")
     character = models.ForeignKey("catalog.Character", on_delete=models.PROTECT, null=True, blank=True, verbose_name="Выбранный герой")
+    second_character = models.ForeignKey("catalog.Character", on_delete=models.PROTECT, null=True, blank=True, related_name="second_character_leads", verbose_name="Второй герой в пакете")
     addons = models.ManyToManyField("catalog.Offering", related_name="lead_addons", blank=True, verbose_name="Шоу и дополнения")
     second_performer = models.BooleanField("Второй аниматор в пакете", default=False)
     selection_snapshot = models.JSONField("Состав и тарифы на момент заявки", default=dict, editable=False)

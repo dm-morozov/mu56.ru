@@ -64,6 +64,8 @@ class Offering(models.Model):
     characters = models.ManyToManyField(Character, blank=True, verbose_name="Персонажи")
     availability = models.CharField("Доступность", max_length=20, choices=Availability, default=Availability.AVAILABLE)
     requirements = models.TextField("Требования площадки", blank=True)
+    service_position = models.PositiveSmallIntegerField("Порядок в услугах", null=True, blank=True,
+        help_text="Меньше число — выше карточка. Пустое поле — нет карточки в разделе услуг. Порядок общей карточки трансформеров задаётся у Бамблби.")
     is_listed = models.BooleanField("Показывать в каталоге", default=True)
 
     class Meta:

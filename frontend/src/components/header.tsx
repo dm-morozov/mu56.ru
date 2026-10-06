@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Brand } from "./brand";
 
-const links = [["/transformers", "Трансформеры"], ["/packages", "Пакеты"], ["/characters", "Персонажи"], ["/shows", "Шоу"], ["/extras", "Дополнения"]];
+const links = [["/transformers", "Трансформеры"], ["/packages", "Пакеты"], ["/characters", "Персонажи"], ["/shows", "Услуги"], ["/new-year", "Новый год"]];
+const moreLinks = [["/extras", "Дополнения"], ["/holidays", "Праздники для групп"], ["/gallery", "Фото праздников"], ["/reviews", "Отзывы"], ["/articles", "Идеи для праздника"], ["/contacts", "Контакты"]];
 export function Header() {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -20,7 +21,7 @@ export function Header() {
     <div className="topline"><div className="container"><span><i />Детские праздники в Оренбурге</span><span>Праздник на вашей площадке — в помещении или на улице</span></div></div>
     <header className="header"><div className="container header-inner">
       <Link href="/" className="brand" aria-label="Мир Улыбок — главная" onClick={() => setOpen(false)}><Brand /></Link>
-      <nav id="main-navigation" aria-label="Основное меню" className={open ? "nav is-open" : "nav"}>{links.map(([url, text]) => <Link key={url} href={url} aria-current={pathname.startsWith(url) ? "page" : undefined} onClick={() => setOpen(false)}>{text}</Link>)}<Link href="/gallery" className="mobile-gallery" onClick={() => setOpen(false)}>Фото праздников</Link></nav>
+      <nav id="main-navigation" aria-label="Основное меню" className={open ? "nav is-open" : "nav"}>{links.map(([url, text]) => <Link key={url} href={url} className={url === "/new-year" ? "nav-seasonal" : undefined} aria-current={pathname.startsWith(url) ? "page" : undefined} onClick={() => setOpen(false)}>{text}</Link>)}{moreLinks.map(([url, text]) => <Link key={url} href={url} className="mobile-gallery" aria-current={pathname.startsWith(url) ? "page" : undefined} onClick={() => setOpen(false)}>{text}</Link>)}</nav>
       <a className="header-phone" href="tel:+79033922229" aria-label="Позвонить: +7 903 392-22-29"><Phone size={17} /> <span>+7 903 392-22-29</span></a>
       <button ref={buttonRef} className="menu-button" aria-label={open ? "Закрыть меню" : "Открыть меню"} aria-controls="main-navigation" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
     </div></header>

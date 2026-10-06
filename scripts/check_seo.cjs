@@ -1,4 +1,13 @@
 const assert = require('node:assert/strict');
+// Next resolves extensionless TypeScript imports; the standalone Node check
+// needs the same resolution for local .ts modules (Node 24+).
+require('node:module').registerHooks({ resolve(specifier, context, nextResolve) {
+  try { return nextResolve(specifier, context); }
+  catch (error) {
+    if (error.code !== 'ERR_MODULE_NOT_FOUND' || !specifier.startsWith('.') || /\.[a-z]+$/i.test(specifier)) throw error;
+    return nextResolve(`${specifier}.ts`, context);
+  }
+} });
 const seo = require('../frontend/src/lib/seo.ts');
 const result = seo.sitemapEntries(
   [{slug:'spider-man'}, {slug:'bumblebee'}, {slug:'new-year-duo'}],

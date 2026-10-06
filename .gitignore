@@ -3,12 +3,22 @@
 __pycache__/
 *.py[cod]
 .env
+*.env
 *.sqlite3
 backend/media/
 backend/staticfiles/
 tmp/
 .local/
+# Локальные отчёты проверок, дампы и закрытые ключи не входят в релиз.
+/output/
+*.dump
+*.sql
+*.pem
+*.key
+*.p12
+*.pfx
 # Исходные материалы с внутренними данными и тяжёлый архив.
+/ai-context/
 PROJECT_CONTEXT.md
 docs/internal/
 scraper/

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { Offering, basePrice, duration, rubles } from "@/lib/types";
 import { ChooseButton } from "./choose-button";
+import { packageTiming } from "@/lib/packages";
 
 const suggestions: Record<string, string> = {
   "sweet-vibe": "Когда хочется героя и сладкого мастер-класса",
@@ -15,9 +16,7 @@ export function PackageComparison({ packages }: { packages: Offering[] }) {
   if (!packages.length) return null;
   const summaries = packages.map(item => ({
     item, price: basePrice(item),
-    active: item.parts.filter(part => part.led_by_performer).reduce((sum, part) => sum + part.duration_minutes, 0),
-    background: item.parts.filter(part => !part.led_by_performer).reduce((sum, part) => sum + part.duration_minutes, 0),
-    approximate: item.parts.some(part => part.led_by_performer && part.is_approximate),
+    ...packageTiming(item),
     extra: item.prices.find(price => price.context === "second_performer"),
   }));
   const showRows = [...new Map(packages.flatMap(item => item.parts.filter(part => part.led_by_performer && part.service_slug && part.service_slug !== "animation")).map(part => [part.service_slug, part.title])).entries()];

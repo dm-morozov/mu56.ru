@@ -9,6 +9,7 @@ const normalize = (text: string) => text.toLocaleLowerCase("ru").replace(/ё/g, 
 export function HeroPicker({ heroes, value, onChange, label }: { heroes: Character[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
+  const resultStatus = useRef<HTMLParagraphElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -23,8 +24,36 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
     setQuery("");
   }
   useEffect(() => {
-    if (open) document.getElementById(`${id}-option-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
+    if (!open) return;
+    const option = document.getElementById(`${id}-option-${activeIndex}`);
+    const list = option?.parentElement;
+    if (!option || !list) return;
+    const row = option.getBoundingClientRect(), bounds = list.getBoundingClientRect();
+    if (row.top < bounds.top) list.scrollTop += row.top - bounds.top;
+    else if (row.bottom > bounds.bottom) list.scrollTop += row.bottom - bounds.bottom;
   }, [open, activeIndex, id]);
+  useEffect(() => {
+    if (!open) return;
+    function revealStatus() {
+      const status = resultStatus.current;
+      const dialog = status?.closest<HTMLDialogElement>("dialog");
+      if (!status || !dialog) return;
+      const viewport = window.visualViewport;
+      const viewportBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+      const bounds = dialog.getBoundingClientRect();
+      const visibleBottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, viewportBottom) - 12;
+      const overflow = status.getBoundingClientRect().bottom - visibleBottom;
+      if (overflow > 0) dialog.scrollTop += overflow;
+    }
+    const frame = requestAnimationFrame(revealStatus);
+    window.addEventListener("resize", revealStatus);
+    window.visualViewport?.addEventListener("resize", revealStatus);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", revealStatus);
+      window.visualViewport?.removeEventListener("resize", revealStatus);
+    };
+  }, [open]);
   return <div className="hero-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
     <label htmlFor={`${id}-input`}>{label}</label>
     <div className="hero-picker-input"><Search size={17} aria-hidden="true" />
@@ -48,7 +77,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
     </div>
     {open && <div className="hero-picker-results">
       <div id={`${id}-list`} role="listbox" aria-label={label} className="hero-picker-list">{options.map((hero, index) => <button key={hero.slug} id={`${id}-option-${index}`} type="button" role="option" tabIndex={-1} aria-selected={index === activeIndex} className={index === activeIndex ? "active" : ""} onMouseDown={event => event.preventDefault()} onClick={() => pick(hero.slug)}><span>{hero.name}</span>{hero.availability === "check" && <small>Доступность уточним</small>}</button>)}</div>
-      <p role="status">{filtered.length ? `Найдено героев: ${filtered.length}` : "Героев не найдено. Попробуйте другое имя."}</p>
+      <p ref={resultStatus} role="status">{filtered.length ? `Найдено героев: ${filtered.length}` : "Героев не найдено. Попробуйте другое имя."}</p>
     </div>}
     <p id={`${id}-help`} className="hero-picker-help">Введите имя или его часть. Например: «паук» или «Гарри».</p>
   </div>;

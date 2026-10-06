@@ -1,0 +1,16 @@
+[Unit]
+Description=Mir Ulybok backup integrity and freshness check
+
+[Service]
+Type=oneshot
+User=mu56
+Group=mu56
+WorkingDirectory=/srv/mu56/current/backend
+EnvironmentFile=/etc/mu56/django.env
+ExecStart=/srv/mu56/current/.venv/bin/python manage.py check_backup /srv/mu56/backups
+TimeoutStartSec=1800
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict

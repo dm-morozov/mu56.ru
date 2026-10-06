@@ -5,11 +5,8 @@ from catalog.models import Availability, Character, ContactChannel, Offering, Pa
 
 
 CHARACTERS = [
-    ("nolik", "Нолик", "Мультфильмы и сказки"),
     ("mcqueen", "Молния Маккуин", "Мультфильмы и сказки"),
     ("clown-kesha", "Клоун Кеша", "Мультфильмы и сказки"),
-    ("korzhik", "Коржик", "Мультфильмы и сказки"),
-    ("karamelka", "Карамелька", "Мультфильмы и сказки"),
     ("chase", "Гонщик", "Мультфильмы и сказки"),
     ("prince", "Принц", "Мультфильмы и сказки"),
     ("hatter", "Шляпник", "Мультфильмы и сказки"),
@@ -41,7 +38,7 @@ CHARACTERS = [
     ("iron-man", "Железный человек", "Большие герои"),
     ("new-year-duo", "Новогодняя сказка: Дед Мороз и Снегурочка", "Новый год"),
 ]
-CHECK_ROLES = {"karamelka", "alice", "ladybug", "hawaiian"}
+CHECK_ROLES = {"alice", "ladybug", "hawaiian"}
 SECOND_HEROES = {slug for slug, _, category in CHARACTERS if category not in {"Большие герои", "Новый год"}}
 
 # slug, name, kind, duration, price, price with animation, performers, approximate
@@ -58,9 +55,9 @@ SERVICES = [
     ("face-painting", "Аквагрим", "extra", None, None, None, 1, False),
     ("pinata", "Пиньята", "extra", None, None, None, 1, False),
     ("cotton-candy-operator", "Сахарная вата с оператором", "extra", None, None, None, 1, False),
-    ("bumblebee", "Бамблби + супергерой", "transformer", 60, 6200, None, 2, False),
-    ("optimus-prime", "Оптимус + супергерой", "transformer", 60, 6200, None, 2, False),
-    ("iron-man", "Железный человек + супергерой", "transformer", 60, 5800, None, 2, False),
+    ("bumblebee", "Бамблби + второй герой на выбор", "transformer", 60, 6200, None, 2, False),
+    ("optimus-prime", "Оптимус Прайм + второй герой на выбор", "transformer", 60, 6200, None, 2, False),
+    ("iron-man", "Железный человек + второй герой на выбор", "transformer", 60, 5800, None, 2, False),
     ("new-year", "Дед Мороз и Снегурочка", "seasonal", None, None, None, 2, True),
 ]
 # Package stages keep the final background music separate from hosted activity.
@@ -100,11 +97,13 @@ class Command(BaseCommand):
                 "name": name, "category": category,
                 "availability": Availability.CHECK if slug in CHECK_ROLES else Availability.AVAILABLE,
             })
+        from catalog.service_catalog import INITIAL_SERVICE_POSITIONS
         services = {}
         for slug, name, kind, duration, amount, addon, performers, approximate in SERVICES:
             service, created = self.create(Offering, {"slug": slug}, {
                 "name": name, "kind": kind, "duration_minutes": duration,
                 "duration_is_approximate": approximate, "included_performers": performers,
+                "service_position": INITIAL_SERVICE_POSITIONS.get(slug),
             })
             services[slug] = service
             if amount is not None:
@@ -119,9 +118,12 @@ class Command(BaseCommand):
                 service.characters.set([c for s, c in characters.items() if c.category not in {"Большие герои", "Новый год"}])
             elif created and kind == "seasonal":
                 service.characters.set([characters["new-year-duo"]])
-        for duration, amount in [(30, 4500), (40, 5000), (55, 6000)]:
+        for duration, amount in [(15, 4000), (30, 5000), (50, 6000)]:
             self.price(services["new-year"], f"minutes-{duration}", amount, duration=duration)
         self.price(services["new-year"], "group-with-sound", 9000, duration=60)
+        services["new-year"].prices.filter(code__in=["minutes-40", "minutes-45", "minutes-55", "minutes-60"]).update(is_confirmed=False)
+        for code, amount in [("eve-18", 7000), ("eve-20", 8000), ("eve-22", 10000), ("night-00", 12000), ("night-02", 10000)]:
+            self.price(services["new-year"], code, amount, duration=50)
         for slug, name, amount, extra, stages in PACKAGES:
             package, created = self.create(Offering, {"slug": slug}, {
                 "name": name, "kind": "package", "duration_minutes": sum(t for _, t in stages),
@@ -140,7 +142,7 @@ class Command(BaseCommand):
         for kind, label, url, verified in [
             ("phone", "+7 903 392-22-29", "tel:+79033922229", True),
             ("telegram", "Написать в Telegram", "https://t.me/dem2014", True),
-            ("max", "Написать в MAX", "https://max.ru/u/f9LHodD0cOJrL3EkQeraU9Ajq6LR6UeBpxjl6Dg77jmZRW7lPGh89Cj40Ls", False),
+            ("max", "Написать в MAX", "https://max.ru/u/f9LHodD0cOKsTMRTtHDrBCx9IUwlPCT_77oJkGTxYU2zWOl3LgWbfqpRnKA", False),
         ]:
             self.create(ContactChannel, {"kind": kind}, {"label": label, "url": url, "is_verified": verified})
         self.stdout.write(self.style.SUCCESS(

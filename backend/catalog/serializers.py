@@ -49,7 +49,7 @@ class OfferingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offering
         fields = (
-            "slug", "name", "kind", "description", "duration_minutes", "duration_is_approximate",
+            "slug", "name", "kind", "service_position", "description", "duration_minutes", "duration_is_approximate",
             "included_performers", "availability", "availability_label", "requirements", "prices", "characters", "parts",
         )
 

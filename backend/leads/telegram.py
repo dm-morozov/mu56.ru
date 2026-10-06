@@ -74,6 +74,8 @@ def notification_payload(lead, chat_id):
     if snapshot.get("character"):
         label = "Второй герой" if (snapshot.get("offering") or {}).get("kind") == "transformer" else "Герой"
         lines.append(f"{label}: {clean(snapshot['character'].get('name'))}")
+    if snapshot.get("second_character"):
+        lines.append(f"Второй герой: {clean(snapshot['second_character'].get('name'))}")
     if snapshot.get("addons"):
         lines.append("Дополнения: " + clean(", ".join(item.get("name", "") for item in snapshot["addons"]), 500))
     if snapshot.get("second_performer"):

@@ -1,8 +1,8 @@
-const knownCharacters = new Set(["nolik", "mcqueen", "clown-kesha", "chase", "prince", "hatter", "kutamba", "ninja-turtle", "deadpool", "james-bond", "captain-america", "black-spider-man", "cat-noir", "luke-skywalker", "harry-potter", "hawaiian", "jack-sparrow", "alice", "korzhik", "karamelka", "ladybug", "football", "aladdin", "batman", "superman", "spider-man", "among-us", "leon", "tiktok", "creeper", "ded-moroz", "snegurochka"]);
+import { characterPortraits } from "./character-images";
 export function characterImage(slug: string) {
   if (slug === "new-year-duo" || slug === "new-year") return "/media/new-year/duo-studio.jpg";
-  if (knownCharacters.has(slug)) return `/media/characters/${slug}.png`;
-  return ({ bumblebee: "/media/bumblebee-party.jpg", "optimus-prime": "/media/optimus.png", "iron-man": "/media/iron-man.png" } as Record<string, string>)[slug];
+  if (characterPortraits[slug]) return characterPortraits[slug];
+  return ({ bumblebee: "/media/bumblebee-party-studio.jpg", "optimus-prime": "/media/optimus-prime-spider-man.jpg", "iron-man": "/media/iron-man-superman-portrait.png" } as Record<string, string>)[slug];
 }
 export function characterIsPhoto(slug: string) {
   return ["bumblebee", "optimus-prime", "iron-man", "new-year-duo", "new-year"].includes(slug);
@@ -14,4 +14,17 @@ export function offeringUrl(kind: string, slug: string) {
   if (kind === "extra") return `/extras/${slug}`;
   if (kind === "seasonal") return "/new-year";
   return "/characters";
+}
+
+export function serviceImage(slug: string) {
+  const extensions: Record<string, string> = { animation: "png", nitrogen: "png", foam: "png", silver: "png", ribbons: "png", "cotton-candy-show": "png", projector: "png", photographer: "png", sound: "png", "new-year": "jpg" };
+  return extensions[slug] ? `/media/services/${slug}.${extensions[slug]}` : undefined;
+}
+
+export const showImage = serviceImage;
+
+export function packageImage(slug: string) {
+  return ["sweet-vibe", "foam-party", "ice-breath", "full-party", "silver-party"].includes(slug)
+    ? `/media/packages/${slug}.png`
+    : undefined;
 }

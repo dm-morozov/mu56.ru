@@ -44,7 +44,8 @@ class PackagePartInline(admin.TabularInline):
 
 @admin.register(Offering)
 class OfferingAdmin(admin.ModelAdmin):
-    list_display = ("name", "kind", "duration_minutes", "included_performers", "availability", "is_listed")
+    list_display = ("name", "kind", "service_position", "duration_minutes", "included_performers", "availability", "is_listed")
+    list_editable = ("service_position",)
     list_filter = ("kind", "availability", "is_listed")
     search_fields = ("name", "description")
     prepopulated_fields = {"slug": ("name",)}

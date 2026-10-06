@@ -3,16 +3,13 @@ import Link from "next/link";
 import { PartyPopper, Projector, Waves } from "lucide-react";
 import type { Offering } from "@/lib/types";
 import { basePrice, duration, rubles } from "@/lib/types";
+import { showImage } from "@/lib/images";
 import { ChooseButton } from "./choose-button";
-
-const photos: Record<string, string> = {
-  nitrogen: "/media/shows/nitrogen.jpg", silver: "/media/shows/silver.jpg", "cotton-candy-show": "/media/shows/cotton-candy.jpg",
-};
 
 export function ShowCard({ offering }: { offering: Offering }) {
   const price = basePrice(offering);
   const addon = offering.prices.find(p => p.context === "with_animation")?.amount_rub ?? price;
-  const photo = photos[offering.slug];
+  const photo = showImage(offering.slug);
   const Icon = offering.slug === "projector" ? Projector : offering.slug === "foam" ? Waves : PartyPopper;
   return <article className="show-card">
     <Link href={`/shows/${offering.slug}`} className={`show-visual show-visual-${offering.slug}`} aria-label={`Подробнее: ${offering.name}`}>

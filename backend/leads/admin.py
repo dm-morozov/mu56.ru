@@ -90,7 +90,7 @@ class LeadAdmin(admin.ModelAdmin):
         ("Работа с заявкой", {"fields": ("status", "manager_notes", "notification_status")}),
         ("Клиент и связь", {"fields": ("name", "phone", "call_client", "contact_method", "messenger_handle")}),
         ("Праздник", {"fields": (("event_date", "event_time"), ("child_age", "children_count"), "location", "comment")}),
-        ("Программа после обсуждения", {"fields": ("offering", "primary_hero", "character", "addons", "second_performer"), "description": "В трансформерах основная программа выбирает большого героя и цену, а поле героя — второго участника в обычном костюме. Несколько больших героев обсуждаются отдельно через пожелания/заметки. Исходный состав и тарифы ниже сохраняются; правки не пересчитывают первоначальную сумму и не отправляют новое уведомление."}),
+        ("Программа после обсуждения", {"fields": ("offering", "primary_hero", "character", "addons", "second_performer", "second_character"), "description": "В трансформерах основная программа выбирает большого героя и цену, а поле героя — второго участника в обычном костюме. Несколько больших героев обсуждаются отдельно через пожелания/заметки. Исходный состав и тарифы ниже сохраняются; правки не пересчитывают первоначальную сумму и не отправляют новое уведомление."}),
         ("Исходная заявка и предварительный расчёт", {"fields": ("snapshot_summary",)}),
         ("Служебные данные", {"fields": ("id", "created_at", "consent_at", "consent_version", "snapshot_json"), "classes": ("collapse",)}),
     )
@@ -124,6 +124,8 @@ class LeadAdmin(admin.ModelAdmin):
         if snapshot.get("character"):
             label = "Второй герой: " if (snapshot.get("offering") or {}).get("kind") == "transformer" else "Герой: "
             lines.append(label + snapshot["character"].get("name", ""))
+        if snapshot.get("second_character"):
+            lines.append("Второй герой в пакете: " + snapshot["second_character"].get("name", ""))
         if snapshot.get("addons"):
             lines.append("Дополнения: " + ", ".join(item.get("name", "") for item in snapshot["addons"]))
         if snapshot.get("second_performer"):

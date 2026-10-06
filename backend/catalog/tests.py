@@ -49,12 +49,17 @@ class CatalogTests(TestCase):
             transformer_total(program, [silver, silver])
 
     def test_seed_does_not_reset_owner_edits_or_duplicate_records(self):
-        tariff = Offering.objects.get(slug="animation").prices.get(code="base")
+        animation = Offering.objects.get(slug="animation")
+        animation.service_position = 5
+        animation.save(update_fields=["service_position"])
+        tariff = animation.prices.get(code="base")
         tariff.amount_rub = 3700
         tariff.save()
         counts = (Character.objects.count(), Offering.objects.count(), PriceOption.objects.count())
         call_command("seed_catalog", stdout=StringIO())
         tariff.refresh_from_db()
+        animation.refresh_from_db()
+        self.assertEqual(animation.service_position, 5)
         self.assertEqual(tariff.amount_rub, 3700)
         self.assertEqual(counts, (Character.objects.count(), Offering.objects.count(), PriceOption.objects.count()))
 
@@ -87,8 +92,11 @@ class CatalogTests(TestCase):
         self.assertContains(response, "Фоновая музыка, без ведущих")
 
     def test_new_year_has_three_home_formats_and_group_format(self):
-        tariffs = Offering.objects.get(slug="new-year").prices.filter(is_confirmed=True).order_by("duration_minutes")
-        self.assertEqual(list(tariffs.values_list("duration_minutes", "amount_rub")), [(30, 4500), (40, 5000), (55, 6000), (60, 9000)])
+        tariffs = Offering.objects.get(slug="new-year").prices.filter(is_confirmed=True)
+        self.assertEqual(dict(tariffs.values_list("code", "amount_rub")), {
+            "minutes-15": 4000, "minutes-30": 5000, "minutes-50": 6000, "group-with-sound": 9000,
+            "eve-18": 7000, "eve-20": 8000, "eve-22": 10000, "night-00": 12000, "night-02": 10000,
+        })
 
     def test_retired_new_year_tariff_is_preserved_but_not_public(self):
         from importlib import import_module
@@ -96,12 +104,14 @@ class CatalogTests(TestCase):
         from .views import public_offerings
 
         program = Offering.objects.get(slug="new-year")
-        old = PriceOption.objects.create(offering=program, code="minutes-15", duration_minutes=15, amount_rub=3500, is_confirmed=True)
+        old = PriceOption.objects.create(offering=program, code="minutes-45", duration_minutes=45, amount_rub=3500, is_confirmed=True)
         from .models import CharacterPhoto
         duo = Character.objects.get(slug="new-year-duo")
         old_photo = CharacterPhoto.objects.create(character=duo, image="old-costume.jpg", alt="Старый костюм")
         migration = import_module("catalog.migrations.0007_refresh_new_year")
         migration.refresh_new_year(apps, None)
+        final_tariffs = import_module("catalog.migrations.0010_new_year_final_tariffs")
+        final_tariffs.update_tariffs(apps, None)
         call_command("seed_catalog", stdout=StringIO())
         old.refresh_from_db()
         self.assertEqual(old.amount_rub, 3500)
@@ -115,7 +125,7 @@ class CatalogTests(TestCase):
         self.assertFalse(old_photo.is_listed)
         self.assertTrue(new_photo.is_listed)
         visible = public_offerings().get(pk=program.pk).public_prices
-        self.assertNotIn("minutes-15", [price.code for price in visible])
+        self.assertNotIn("minutes-45", [price.code for price in visible])
 
     def test_new_year_lists_one_pair_and_keeps_owner_description(self):
         program = Offering.objects.get(slug="new-year")

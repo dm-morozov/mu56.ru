@@ -1,5 +1,6 @@
 from django import forms
 from catalog.models import Offering
+from catalog.addons import addon_error
 from .models import Lead
 from .selection import allowed_characters, character_error
 
@@ -26,12 +27,29 @@ class LeadAdminForm(forms.ModelForm):
                     field.help_text = "Текущий герой несовместим с программой. Выберите подходящего героя или оставьте поле пустым. " + field.help_text
                 field.queryset = allowed
 
+        second_field = self.fields.get("second_character")
+        if second_field and offering:
+            second_field.queryset = allowed_characters(offering)
+        if second_field:
+            second_field.help_text = "Для обычного пакета с добавленным вторым аниматором. Можно согласовать позже."
+
     def clean(self):
         cleaned = super().clean()
         offering, character = cleaned.get("offering"), cleaned.get("character")
+        error = addon_error(offering, list(cleaned.get("addons") or []))
+        if error:
+            self.add_error("addons", error)
         error = character_error(offering, character)
         if error:
             self.add_error("character", error)
         if cleaned.get("second_performer") and (not offering or offering.kind != Offering.Kind.PACKAGE):
             self.add_error("second_performer", "Доплата второго ведущего выбирается только в обычном пакете. В трансформерах два участника уже входят в цену.")
+        second_character = cleaned.get("second_character")
+        if second_character:
+            if not offering or offering.kind != Offering.Kind.PACKAGE or not cleaned.get("second_performer"):
+                self.add_error("second_character", "Выберите пакет и добавьте второго аниматора.")
+            else:
+                error = character_error(offering, second_character)
+                if error:
+                    self.add_error("second_character", error)
         return cleaned

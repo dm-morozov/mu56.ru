@@ -5,7 +5,7 @@ const config: NextConfig = {
   devIndicators: false,
   images: {
     formats: ["image/webp"],
-    localPatterns: [{ pathname: "/media/**", search: "" }, { pathname: "/uploads/**", search: "" }],
+    localPatterns: [{ pathname: "/media/**", search: "" }, { pathname: "/uploads/**", search: "" }, { pathname: "/_next/static/media/**", search: "" }],
   },
   skipTrailingSlashRedirect: true,
   async rewrites() {

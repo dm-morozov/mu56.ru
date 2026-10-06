@@ -1,4 +1,5 @@
 import type { Character, Offering } from "./types";
+import { contacts } from "./contacts";
 
 export const siteOrigin = new URL(process.env.SITE_URL || "https://mu56.ru").origin;
 export const indexingEnabled = process.env.SITE_INDEXING_ENABLED === "true";
@@ -18,7 +19,7 @@ export const organization = {
   "@context": "https://schema.org", "@type": "Organization", "@id": absoluteUrl("/#organization"),
   name: "Мир Улыбок", url: absoluteUrl("/"), telephone: "+79033922229",
   logo: absoluteUrl("/media/logo-kite.svg"), areaServed: { "@type": "City", name: "Оренбург" },
-  sameAs: ["https://t.me/dem2014"],
+  sameAs: Object.values(contacts),
 };
 export function serviceSchema(item: Offering, description: string) {
   const path = servicePath(item.kind, item.slug);

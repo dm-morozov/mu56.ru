@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Mir Ulybok backups every four hours (enable with backup timer)
+
+[Timer]
+OnCalendar=*-*-* 00,04,08,12,16,20:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=mu56-backup-check.service
+
+[Install]
+WantedBy=timers.target
