@@ -37,7 +37,7 @@ def archive(name, paths):
             if not file.is_file() or file.is_symlink():
                 continue
             relative = file.relative_to(root)
-            if name == "source.zip" and (set(relative.parts) & skipped or relative.parts[:2] == ("backend", "media") or file.name.startswith(".env") and file.name != ".env.example" or file.suffix in {".sqlite3", ".pyc", ".tsbuildinfo", ".env", ".pem", ".key", ".p12", ".pfx"}):
+            if name == "source.zip" and (set(relative.parts) & skipped or relative.parts[:2] in {("backend", "media"), ("docs", "internal")} or file.name.startswith(".env") and file.name != ".env.example" or file.suffix in {".sqlite3", ".pyc", ".tsbuildinfo", ".env", ".pem", ".key", ".p12", ".pfx", ".dump", ".sql"}):
                 continue
             files.append(file)
     target = destination / name
@@ -72,7 +72,7 @@ with psycopg.connect("", connect_timeout=10) as connection:
         for (table,) in tables
     }
 print("Archiving and verifying source files and media...", flush=True)
-source_files = archive("source.zip", [root / name for name in ["backend", "frontend", "scripts", "docs", "deploy"] if (root / name).exists()] + list(root.glob("*.md")) + [root / ".gitignore"])
+source_files = archive("source.zip", [root / name for name in ["backend", "frontend", "scripts", "docs", "deploy", ".github"] if (root / name).exists()] + list(root.glob("*.md")) + [root / ".gitignore"])
 media_files = archive("media.zip", [root / "backend" / "media"])
 restore_db = "mu56_restore_" + uuid4().hex[:12]
 print("Restoring into a new isolated database...", flush=True)
