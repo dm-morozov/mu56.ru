@@ -1,0 +1,91 @@
+name: mu56
+x-app: &app
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  pids_limit: 128
+  read_only: true
+  tmpfs: ['/tmp:size=64m,mode=1777']
+services:
+  database:
+    image: ${DATABASE_IMAGE:?Set pinned DATABASE_IMAGE}
+    restart: unless-stopped
+    env_file: [./database.env]
+    volumes: [database:/var/lib/postgresql]
+    mem_limit: 384m
+    memswap_limit: 512m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  gateway:
+    image: ${GATEWAY_IMAGE:?Set pinned GATEWAY_IMAGE}
+    restart: unless-stopped
+    environment:
+      SITE_HOST: ${SITE_HOST:?Set SITE_HOST}
+      NGINX_ENVSUBST_FILTER: SITE_HOST
+    ports: ['127.0.0.1:18080:8080']
+    volumes:
+      - ./gateway.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - media:/srv/mu56/shared/media:ro
+      - static:/srv/mu56/shared/static:ro
+    mem_limit: 64m
+    memswap_limit: 128m
+  backend:
+    <<: *app
+    image: ${BACKEND_IMAGE:?Set release BACKEND_IMAGE}
+    network_mode: service:gateway
+    env_file: [./backend.env]
+    depends_on:
+      gateway: {condition: service_started}
+      database: {condition: service_healthy}
+    volumes:
+      - media:/srv/mu56/shared/media
+      - static:/srv/mu56/shared/static
+      - private-cache:/srv/mu56/shared/private-cache
+    mem_limit: 256m
+    memswap_limit: 384m
+  frontend:
+    <<: *app
+    image: ${FRONTEND_IMAGE:?Set release FRONTEND_IMAGE}
+    network_mode: service:gateway
+    env_file: [./frontend.env]
+    depends_on:
+      gateway: {condition: service_started}
+      backend: {condition: service_started}
+    volumes: [next-cache:/app/.next/cache]
+    mem_limit: 512m
+    memswap_limit: 768m
+  worker:
+    <<: *app
+    image: ${BACKEND_IMAGE:?Set release BACKEND_IMAGE}
+    profiles: [notifications]
+    env_file: [./backend.env]
+    command: [python, manage.py, telegram_worker]
+    depends_on:
+      database: {condition: service_healthy}
+    volumes: [private-cache:/srv/mu56/shared/private-cache]
+    mem_limit: 128m
+    memswap_limit: 256m
+  storage-init:
+    image: ${BACKEND_IMAGE:?Set release BACKEND_IMAGE}
+    profiles: [tools]
+    user: '0:0'
+    entrypoint: [sh, -ec]
+    command: ['chown 10001:10001 /data/media /data/static /data/private-cache /data/next-cache; chmod 0755 /data/media /data/static /data/next-cache; chmod 0700 /data/private-cache']
+    volumes:
+      - media:/data/media
+      - static:/data/static
+      - private-cache:/data/private-cache
+      - next-cache:/data/next-cache
+volumes:
+  database:
+  media:
+  static:
+  private-cache:
+  next-cache:
+networks:
+  default:
+    ipam:
+      config: [{subnet: 172.30.56.0/24}]
