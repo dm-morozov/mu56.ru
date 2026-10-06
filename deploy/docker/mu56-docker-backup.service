@@ -1,0 +1,21 @@
+[Unit]
+Description=Private Docker data backup for mu56
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/projects/mu56
+ExecStart=/usr/bin/flock -n /srv/projects/mu56/backups/.backup.lock /usr/bin/python3 /srv/projects/mu56/backup-controller.py
+TimeoutStartSec=15min
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/projects/mu56/backups
+RestrictAddressFamilies=AF_UNIX
