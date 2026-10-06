@@ -3,10 +3,12 @@
 Linux only. No system service, DNS, real certificate or Telegram configuration is changed.
 """
 import argparse
+import gzip
 import http.client
 import json
 from pathlib import Path
 import shutil
+import socket
 import ssl
 import subprocess
 import tempfile
@@ -17,6 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 parser = argparse.ArgumentParser()
 parser.add_argument("--nginx", required=True, type=Path)
 parser.add_argument("--mime-types", required=True, type=Path)
+parser.add_argument("--skip-systemd", action="store_true", help="Run only Nginx checks in containers without systemd-analyze.")
 args = parser.parse_args()
 repo = Path(__file__).resolve().parents[1]
 seen = []
@@ -33,8 +36,12 @@ class Upstream(BaseHTTPRequestHandler):
                 "ip": self.headers.get("X-Forwarded-For")}
         seen.append(item)
         body = json.dumps(item).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+        self.send_response(404 if self.path.endswith("missing.js") else 200)
+        if self.path.startswith("/_next/static/"):
+            body = b"/* static fixture */\n" * 300
+            self.send_header("Content-Type", "application/javascript")
+        else:
+            self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -62,7 +69,7 @@ with tempfile.TemporaryDirectory(prefix="mu56-nginx-qa-") as folder:
     template = (repo / "deploy/nginx/mu56.conf").read_text()
     replacements = {
         "listen 80;": "listen 127.0.0.1:18080;",
-        "listen 443 ssl;": "listen 127.0.0.1:18443 ssl;",
+        "listen 443 ssl http2;": "listen 127.0.0.1:18443 ssl http2;",
         "127.0.0.1:8081": "127.0.0.1:18081",
         "127.0.0.1:8000": "127.0.0.1:18000",
         "127.0.0.1:3000": "127.0.0.1:13000",
@@ -132,13 +139,24 @@ with tempfile.TemporaryDirectory(prefix="mu56-nginx-qa-") as folder:
         require(request("/admin/", port=18081)[0] == 404, "Internal admin blocked")
         require(request("/uploads/clip.mp4", port=18081)[2] == bytes(range(100)), "Internal image/media fetch")
         require(request("/new-year")[0] == 200, "Frontend forwarding")
+        status, headers, compressed = request("/_next/static/chunks/test.js", headers={"Accept-Encoding": "gzip"})
+        require(status == 200 and headers.get("Content-Encoding") == "gzip", "Static JavaScript compression")
+        require(gzip.decompress(compressed) == b"/* static fixture */\n" * 300, "Compressed content integrity")
+        require(headers.get("Cache-Control") == "public, max-age=31536000, immutable", "Hashed build asset caching")
+        require("Accept-Encoding" in headers.get("Vary", ""), "Compression negotiation")
+        require("Cache-Control" not in request("/_next/static/chunks/missing.js")[1], "Do not cache missing build assets")
+        require("Cache-Control" not in request("/api/v1/csrf/")[1], "Do not add public cache policy to API")
+        h2_context = ssl.create_default_context(cafile=str(qa / "cert.pem"))
+        h2_context.set_alpn_protocols(["h2"])
+        with h2_context.wrap_socket(socket.create_connection(("127.0.0.1", 18443), timeout=5), server_hostname="mu56.ru") as sock:
+            require(sock.selected_alpn_protocol() == "h2", "HTTP/2 TLS negotiation")
         # Sanitized log must omit query parameters, including on backend routes.
         request("/api/v1/csrf/?qa-secret=should-not-be-logged")
         process.terminate()
         process.wait(timeout=10)
         logs = (qa / "logs/mu56-access.log").read_text()
         require("qa-secret" not in logs and "should-not-be-logged" not in logs, "Access log excludes query data")
-        print("Nginx syntax and 15 isolated proxy/static/TLS checks passed.")
+        print("Nginx syntax and 22 isolated proxy/static/TLS/compression/cache checks passed.")
     finally:
         if process.poll() is None:
             process.terminate()
@@ -146,6 +164,10 @@ with tempfile.TemporaryDirectory(prefix="mu56-nginx-qa-") as folder:
         for server in servers:
             server.shutdown()
             server.server_close()
+
+    if args.skip_systemd:
+        print("Systemd checks explicitly skipped; this run verifies Nginx only.")
+        raise SystemExit(0)
 
     # Verify unit syntax in a fake filesystem. Placeholder executables are never run.
     unit_root = qa / "unit-root"

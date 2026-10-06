@@ -9,7 +9,8 @@ test -f /srv/mu56/current/frontend/.next/BUILD_ID
 test -L /srv/mu56/current/frontend/.next/cache
 sudo systemd-analyze verify /etc/systemd/system/mu56-backend.service \
     /etc/systemd/system/mu56-frontend.service /etc/systemd/system/mu56-telegram.service \
-    /etc/systemd/system/mu56-backup.service /etc/systemd/system/mu56-backup.timer
+    /etc/systemd/system/mu56-backup.service /etc/systemd/system/mu56-backup.timer \
+    /etc/systemd/system/mu56-backup-check.service /etc/systemd/system/mu56-backup-check.timer
 sudo nginx -t
 sh /srv/mu56/current/deploy/manage.sh check --deploy --fail-level ERROR
 sh /srv/mu56/current/deploy/manage.sh migrate --check
