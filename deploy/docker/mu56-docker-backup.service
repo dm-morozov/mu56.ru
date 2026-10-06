@@ -6,7 +6,7 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/srv/projects/mu56
-ExecStart=/usr/bin/flock -n /srv/projects/mu56/backups/.backup.lock /usr/bin/python3 /srv/projects/mu56/backup-controller.py
+ExecStart=/usr/bin/flock -n /srv/projects/mu56/backup-v2/.backup.lock /usr/bin/python3 /srv/projects/mu56/backup-daily.py
 TimeoutStartSec=15min
 UMask=0077
 Nice=10
@@ -17,5 +17,5 @@ PrivateTmp=true
 PrivateNetwork=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/srv/projects/mu56/backups
+ReadWritePaths=/srv/projects/mu56/backup-v2
 RestrictAddressFamilies=AF_UNIX
