@@ -19,8 +19,9 @@ Selectel `web-vds-01`, Москва, Ubuntu 24.04.4 LTS, 1 vCPU,
 
 Созданы приватные каталоги `/srv/projects` и `/srv/projects/mu56` (0700).
 Docker API не открыт по TCP. Управление Docker пока через root по проектному
-SSH-ключу; создан ограниченный mu56-deploy с командой status. Обновление и
-откат этому пользователю пока не разрешены: [DEPLOY_ACCESS.md](DEPLOY_ACCESS.md).
+SSH-ключу; создан ограниченный mu56-deploy с командами status/release/rollback.
+Для CI используется отдельный ключ и подтверждение environment mu56-dev:
+[IMAGE_DELIVERY.md](IMAGE_DELIVERY.md).
 Членство в группе docker фактически даёт права root, поэтому не добавлять
 туда пользователей автоматически. При первичной проверке был открыт только SSH; актуальный статус размещения ниже.
 

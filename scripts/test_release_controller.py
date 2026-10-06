@@ -1,8 +1,11 @@
 """Security boundaries for the root-owned deployment controller."""
 import importlib.util
+import io
+import json
 from pathlib import Path
 import sys
 import types
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -35,6 +38,28 @@ class PayloadTests(unittest.TestCase):
     def test_extra_fields_and_commit(self):
         payload = self.payload(); payload['command'] = 'id'
         with self.assertRaises(ValueError): controller.validate(payload)
+
+    def test_failed_switch_restores_previous_images_without_advancing_state(self):
+        parent = Path(__file__).resolve().parents[1]/'.local/release-controller-tests'
+        parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=parent) as directory:
+            root = Path(directory)
+            old = {'BACKEND_IMAGE': 'sha256:'+'d'*64, 'FRONTEND_IMAGE': 'sha256:'+'e'*64}
+            (root/'.env').write_text(''.join(k+'='+v+'\n' for k,v in old.items()))
+            lock = types.SimpleNamespace(flock=lambda *args: None, LOCK_EX=2, LOCK_NB=4)
+            def run(args, *extra):
+                return json.dumps({'org.opencontainers.image.revision': 'a'*40})
+            with patch.object(controller, 'ROOT', root), patch.object(controller, 'STATE', root/'releases'), \
+                 patch.object(controller, 'fcntl', lock), \
+                 patch.object(controller.tempfile, 'tempdir', str(parent)), \
+                 patch.object(controller.shutil, 'disk_usage', return_value=types.SimpleNamespace(free=8*1024**3)), \
+                 patch.object(controller, 'compose', return_value=''), patch.object(controller, 'run', side_effect=run), \
+                 patch.object(controller, 'switch', side_effect=[RuntimeError('failed'), None]) as switch, \
+                 patch.object(sys, 'argv', ['controller', 'release']), \
+                 patch.object(sys, 'stdin', io.StringIO(json.dumps(self.payload()))):
+                with self.assertRaises(RuntimeError): controller.main()
+                self.assertEqual(switch.call_args_list[1].args[0], old)
+                self.assertFalse((root/'releases/current.json').exists())
         payload = self.payload(); payload['sha'] = 'main'
         with self.assertRaises(ValueError): controller.validate(payload)
 
