@@ -29,6 +29,26 @@ class PayloadTests(unittest.TestCase):
         payload['backend'] = payload['backend'].replace('dm-morozov', 'other')
         with self.assertRaises(ValueError): controller.validate(payload)
 
+    def test_readiness_uses_configured_domain_for_both_endpoints(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]/'.local/release-controller-tests') as directory:
+            root = Path(directory)
+            for host in ('mu56.ru', 'dev.mu56.ru'):
+                (root/'.env').write_text('SITE_HOST='+host+'\n')
+                with patch.object(controller, 'ROOT', root), patch.object(controller.urllib.request, 'urlopen') as open_url:
+                    response = open_url.return_value.__enter__.return_value
+                    response.status = 200
+                    response.read.return_value = b'content'
+                    controller.ready()
+                    self.assertEqual([call.args[0].get_header('Host') for call in open_url.call_args_list], [host, host])
+
+    def test_readiness_rejects_unexpected_host_without_network_request(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]/'.local/release-controller-tests') as directory:
+            root = Path(directory)
+            (root/'.env').write_text('SITE_HOST=other.example\n')
+            with patch.object(controller, 'ROOT', root), patch.object(controller.urllib.request, 'urlopen') as open_url:
+                with self.assertRaises(ValueError): controller.ready()
+                open_url.assert_not_called()
+
     def test_tags_and_command_injection(self):
         for value in ('nginx:latest', self.payload()['backend']+'; id',
                       'ghcr.io/dm-morozov/mu56-backend:latest'):
