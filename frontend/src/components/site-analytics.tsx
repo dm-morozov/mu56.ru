@@ -32,6 +32,7 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
   const selection = useSelection();
   const [ready, setReady] = useState(false), [show, setShow] = useState(false);
   const [dismissedUntil, setDismissedUntil] = useState(0);
+  const [editingSettings, setEditingSettings] = useState(false);
   const previous = useRef<string | null>(null);
   useEffect(() => {
     if (!enabled || location.hostname !== "mu56.ru") return;
@@ -41,7 +42,7 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
       setShow(!accepted && expiry <= Date.now()); setReady(accepted);
       if (!accepted) stop();
     }
-    function settings() { setShow(true); }
+    function settings() { setEditingSettings(true); setShow(true); }
     sync();
     window.addEventListener("mu56-analytics-settings", settings);
     window.addEventListener("storage", sync);
@@ -118,12 +119,11 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
       else localStorage.setItem(DISMISSED_UNTIL, String(expiry));
     } catch { stop(); setReady(false); setShow(false); return; }
     setDismissedUntil(expiry);
-    if (!accepted) stop(); setReady(accepted); setShow(false);
+    if (!accepted) stop(); setReady(accepted); setShow(false); setEditingSettings(false);
   }
   if (!show || selection.open || !safePath(pathname || "")) return null;
   return <aside className="analytics-notice" aria-label="Настройки аналитики">
-    <button type="button" className="analytics-notice-close" aria-label="Закрыть без включения аналитики" onClick={() => choose(false)}><span aria-hidden="true">×</span></button>
-    <p>С вашего согласия используем cookies и Яндекс.Метрику для статистики посещений и действий. <Link href="/privacy">Подробнее</Link></p>
-    <div><button type="button" className="button orange" onClick={() => choose(true)}>Согласен</button></div>
+    <div className="analytics-notice-text"><p>С вашего согласия используем cookies и Яндекс.Метрику для статистики посещений и действий. <Link href="/privacy">Подробнее</Link></p></div>
+    <div className="analytics-notice-actions"><button type="button" className="button orange" onClick={() => choose(true)}>Согласен</button>{editingSettings && <button type="button" className="analytics-settings" onClick={() => choose(false)}>Отключить аналитику</button>}</div>
   </aside>;
 }
