@@ -4,6 +4,7 @@ const config: NextConfig = {
   output: process.env.DOCKER_STANDALONE === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   devIndicators: false,
+  allowedDevOrigins: (process.env.NEXT_DEV_ALLOWED_ORIGINS || "").split(",").map(host => host.trim()).filter(Boolean),
   images: {
     formats: ["image/webp"],
     localPatterns: [{ pathname: "/media/**", search: "" }, { pathname: "/uploads/**", search: "" }, { pathname: "/_next/static/media/**", search: "" }],
@@ -18,3 +19,4 @@ const config: NextConfig = {
   },
 };
 export default config;
+
