@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Phone, X } from "lucide-react";
 import { HeroPicker } from "./hero-picker";
+import { ProgramPicker } from "./program-picker";
 import { ShowAddon } from "./show-addon";
 import { PackagePart } from "./package-part";
 import { PhoneInput } from "./phone-input";
@@ -13,7 +14,6 @@ import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
 type Quote = { amount_rub: number; lines: {slug: string; name: string; amount_rub: number}[] };
-const programGroups = [["transformer", "Большие герои"], ["package", "Готовые пакеты"], ["animation", "Анимация"], ["seasonal", "Новый год"], ["show", "Отдельные шоу"], ["extra", "Дополнения"]];
 const eveningSlots: Record<string, string> = {"eve-18":"31 декабря · 18:00", "eve-20":"31 декабря · 20:00", "eve-22":"31 декабря · 22:00", "night-00":"1 января · 00:00", "night-02":"1 января · 02:00"};
 const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
@@ -137,7 +137,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         <div id="lead-program-details" hidden={!detailsOpen}>
         <div className="form-row"><label>Дата праздника<input name="event_date" type="date" value={eventDate} onInput={event => setEventDate(event.currentTarget.value)} onChange={event => setEventDate(event.target.value)} /></label><label>Время начала программы<input name="event_time" type="time" value={eventTime} onInput={event => setEventTime(event.currentTarget.value)} onChange={event => setEventTime(event.target.value)} aria-describedby="event-time-help" /></label></div>
         <p id="event-time-help" className="hero-picker-help event-time-help">Время по Оренбургу. Начало программы лучше планировать на 15 минут позже сбора гостей.</p>
-        <label>{transformer ? "Большой герой и программа" : "Программа"}<select name="offering" value={programSlug} onChange={event => { const slug = event.target.value; setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }}><option value="">Пока не знаю — помогите выбрать</option>{programGroups.map(([kind, label]) => { const items = offerings.filter(item => item.kind === kind && !addonOnly(item.slug)); return items.length > 0 && <optgroup key={kind} label={label}>{items.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}</optgroup>; })}</select></label>
+        <ProgramPicker offerings={offerings} value={programSlug} label={transformer ? "Большой герой и программа" : "Программа"} onChange={slug => { setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }} />
         {packaged && <section className="lead-package" aria-labelledby="lead-package-title">
           <h3 id="lead-package-title">{program.name}<span>{packageBase === undefined ? "Стоимость уточним" : rubles(packageBase)}</span></h3>
           <fieldset className="lead-addons package-inclusions" aria-labelledby="package-inclusions-title"><h4 id="package-inclusions-title">В программу входит</h4><p>Все пункты включены в пакет. Чтобы изменить состав, выберите другую программу.</p>{program.parts.map(part => <PackagePart key={`${program.slug}-${part.position}`} part={part} description={!part.led_by_performer ? "После анимации и шоу колонка продолжает играть фоновую музыку, пока аниматоры собирают всё оборудование на вашем празднике. Колонку забирают в последнюю очередь, когда остальное оборудование уже сложено. В это время ведущие не проводят игры, конкурсы и шоу." : offerings.find(item => item.slug === part.service_slug)?.description} />)}</fieldset>

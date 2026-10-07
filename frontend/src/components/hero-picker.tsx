@@ -57,7 +57,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
   return <div className="hero-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
     <label htmlFor={`${id}-input`}>{label}</label>
     <div className="hero-picker-input"><Search size={17} aria-hidden="true" />
-      <input ref={input} id={`${id}-input`} name="hero-search" role="combobox" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} aria-describedby={`${id}-help`} placeholder="Согласуем позже — или найдите героя" value={open ? query : selected?.name || ""}
+      <input ref={input} id={`${id}-input`} name="hero-search" role="combobox" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} aria-describedby={`${id}-help`} placeholder="Найти героя" value={open ? query : selected?.name || ""}
         onFocus={() => { setOpen(true); setQuery(""); setActive(0); }}
         onClick={() => { if (!open) { setOpen(true); setQuery(""); setActive(0); } }}
         onChange={event => { const text = event.target.value; setQuery(text); setOpen(true); setActive(text.trim() ? 1 : 0); }}
@@ -79,6 +79,6 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
       <div id={`${id}-list`} role="listbox" aria-label={label} className="hero-picker-list">{options.map((hero, index) => <button key={hero.slug} id={`${id}-option-${index}`} type="button" role="option" tabIndex={-1} aria-selected={index === activeIndex} className={index === activeIndex ? "active" : ""} onMouseDown={event => event.preventDefault()} onClick={() => pick(hero.slug)}><span>{hero.name}</span>{hero.availability === "check" && <small>Доступность уточним</small>}</button>)}</div>
       <p ref={resultStatus} role="status">{filtered.length ? `Найдено героев: ${filtered.length}` : "Героев не найдено. Попробуйте другое имя."}</p>
     </div>}
-    <p id={`${id}-help`} className="hero-picker-help">Введите имя или его часть. Например: «паук» или «Гарри».</p>
+    <p id={`${id}-help`} className="hero-picker-help">Можно выбрать позже. Для поиска введите имя: «паук» или «Гарри».</p>
   </div>;
 }

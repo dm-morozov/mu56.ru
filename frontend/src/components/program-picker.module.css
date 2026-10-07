@@ -1,0 +1,12 @@
+.picker{min-width:0;margin-bottom:12px}
+.picker>label{display:block;font-size:11px;font-weight:800;margin-bottom:5px}
+.trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:12px 13px;border:1px solid #ccd3c9;border-radius:8px;background:white;color:var(--navy);font:inherit;font-size:13px;text-align:left;line-height:1.5}
+.trigger span{min-width:0;overflow-wrap:anywhere}
+.trigger svg,.option svg{flex-shrink:0}
+.trigger:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+.list{margin-top:7px;max-height:min(360px,48dvh);overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:8px;border:1px solid #ccd3c9;border-radius:12px;background:white;padding:6px}
+.heading{padding:12px 10px 6px;font-size:11px;font-weight:800;color:var(--muted)}
+.option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:10px;border-radius:7px;font-size:13px;line-height:1.5;color:var(--navy);cursor:pointer;overflow-wrap:anywhere}
+.active,.option:hover{background:#fff0e4}
+.option[aria-selected=true]{font-weight:700}
+@media(max-width:600px){.trigger{font-size:16px}.option{font-size:14px}}
