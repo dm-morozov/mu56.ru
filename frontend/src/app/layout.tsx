@@ -11,14 +11,15 @@ import { getOfferings } from "@/lib/catalog";
 import { bookingCatalog } from "@/lib/booking-catalog";
 
 import { StructuredData } from "@/components/structured-data";
-import { organization, siteOrigin, indexingEnabled } from "@/lib/seo";
+import { organization, siteOrigin, indexingEnabled, socialPreviewImage } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
   title: { default: "Мир Улыбок — детские праздники и трансформеры в Оренбурге", template: "%s | Мир Улыбок, Оренбург" },
   description: "Выездные детские праздники в Оренбурге: трансформеры, любимые персонажи, шоу и готовые пакеты. Оплата после праздника. Подберём программу для вашего ребёнка.",
   robots: { index: indexingEnabled, follow: indexingEnabled },
-  openGraph: { locale: "ru_RU", type: "website", siteName: "Мир Улыбок", images: [{ url: "/media/bumblebee-live.jpg", alt: "Бамблби на детском празднике" }] },
+  openGraph: { locale: "ru_RU", type: "website", siteName: "Мир Улыбок", images: [socialPreviewImage] },
+  twitter: { card: "summary_large_image", images: [socialPreviewImage] },
 };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const offerings = await getOfferings();

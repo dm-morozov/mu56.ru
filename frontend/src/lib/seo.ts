@@ -8,12 +8,19 @@ export function crawlerRules(enabled: boolean) {
   return [{ userAgent: "*", allow: "/", disallow: ["/api/", "/admin/", "/privacy", "/consent"] }, { userAgent: "OAI-SearchBot", allow: "/", disallow: ["/api/", "/admin/", "/privacy", "/consent"] }];
 }
 export const absoluteUrl = (path: string) => new URL(path, `${siteOrigin}/`).href;
+export const socialPreviewImage: { url: string; alt: string; width?: number; height?: number; type?: string } = {
+  url: absoluteUrl("/media/social-preview-20261008-v2.jpg"),
+  width: 1200,
+  height: 630,
+  type: "image/jpeg",
+  alt: "Мир Улыбок — праздник, который дети не забудут. Аниматоры, трансформеры и шоу в Оренбурге.",
+};
 export const servicePath = (kind: string, slug: string) => ({ animation: "/animators", transformer: `/transformers/${slug}`, package: `/packages/${slug}`, show: `/shows/${slug}`, extra: `/extras/${slug}`, seasonal: "/new-year" } as Record<string, string>)[kind];
 export const characterCanonical = (slug: string) => ["bumblebee", "optimus-prime", "iron-man"].includes(slug) ? `/transformers/${slug}` : ["ded-moroz", "snegurochka", "new-year-duo"].includes(slug) ? "/new-year" : `/characters/${slug}`;
 export const shortDescription = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 180);
 export const serializeJsonLd = (data: unknown) => JSON.stringify(data).replace(/</g, "\\u003c");
 export function pageMetadata(title: string, description: string, path: string) {
-  return { title, description: shortDescription(description), alternates: { canonical: path }, openGraph: { title, description: shortDescription(description), url: absoluteUrl(path), type: "website" as const, locale: "ru_RU", siteName: "Мир Улыбок", images: [{url:absoluteUrl("/media/bumblebee-live.jpg"),alt:"Бамблби на детском празднике"}] } };
+  return { title, description: shortDescription(description), alternates: { canonical: path }, openGraph: { title, description: shortDescription(description), url: absoluteUrl(path), type: "website" as const, locale: "ru_RU", siteName: "Мир Улыбок", images: [socialPreviewImage] } };
 }
 export const organization = {
   "@context": "https://schema.org", "@type": "Organization", "@id": absoluteUrl("/#organization"),
