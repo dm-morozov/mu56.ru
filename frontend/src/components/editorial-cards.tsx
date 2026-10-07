@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Article, Review, articleDate } from "@/lib/editorial";
 
 export function ReviewCards({ reviews }: { reviews: Review[] }) {
-  return <div className="review-grid">{reviews.map((review, index) => <figure className="review-card" key={`${review.author}-${index}`}><span className="review-quote" aria-hidden="true">“</span><blockquote>{review.text}</blockquote><figcaption><strong>{review.author}</strong>{review.source_url ? <a href={review.source_url} target="_blank" rel="noopener noreferrer">Страница на {review.source_label} <ArrowUpRight size={13} /></a> : <span>{review.source_label}</span>}</figcaption></figure>)}</div>;
+  return <div className="review-grid">{reviews.map((review, index) => <figure className="review-card" key={`${review.author}-${index}`}><span className="review-quote" aria-hidden="true">“</span><blockquote>{review.text}</blockquote><figcaption><strong>{review.author}</strong>{review.source_url ? <a href={review.source_url}>Профиль с отзывами на {review.source_label} <ArrowUpRight size={13} /></a> : <span>{review.source_label}</span>}</figcaption></figure>)}</div>;
 }
 export function ArticleCards({ articles, headingLevel = 2 }: { articles: Article[]; headingLevel?: 2 | 3 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";

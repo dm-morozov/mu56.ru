@@ -1,13 +1,16 @@
 from django.core.management.base import BaseCommand
 from catalog.models import Article, Offering, Review
+from .additional_articles import ARTICLES as ADDITIONAL_ARTICLES
+from .avito_review_content import AVITO_PROFILE, REVIEWS as ADDITIONAL_REVIEWS
 
-AVITO = "https://www.avito.ru/orenburg/predlozheniya_uslug/animator_na_den_rozhdeniya_vypusknoy_transformer_2157285404"
+AVITO = AVITO_PROFILE
 REVIEWS = [
     ("natalya", "Наталья", "Отличный аниматор на детский день рождения! Смог увлечь ребят 5 лет без проблем! А малыши не боялись и подходили играть тоже! Спасибо большое за эмоции у детей!"),
     ("darya", "Дарья", "Огромное спасибо за праздник моего сына.\nВсе дети и даже взрослые были в восторге от этого представления. Обязательно будем обращаться повторно ❤️"),
     ("svetlana", "Светлана", "Праздник очень понравился) Оптимус внушительный, а человек+паук весёлый 👍👍👍 Взрослые тоже повеселились 😎"),
     ("viktoriya", "Виктория", "Аниматоры сработали на 100%\nДети очень довольны"),
 ]
+REVIEWS = ADDITIONAL_REVIEWS + REVIEWS
 ARTICLES = [
     ("vypusknoy-dlya-gruppy", "Как подготовить детский выпускной: программа, ведущие и звук", "Что согласовать родителям и организаторам выпускного в детском саду или начальной школе. Помогаем собрать программу для группы и учесть площадку, ведущих и оборудование.", None, """## Начните с группы, а не со списка шоу
 
@@ -180,6 +183,9 @@ ARTICLES = [
 
 Дети знакомятся в своём темпе. Наша задача — предложить комфортное участие и подстроить программу под компанию. Если вы сомневаетесь между героями или форматами, обсудим их вместе до праздника."""),
 ]
+
+
+ARTICLES.extend(ADDITIONAL_ARTICLES)
 
 
 class Command(BaseCommand):

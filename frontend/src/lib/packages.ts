@@ -1,4 +1,19 @@
-import type { Offering } from "./types";
+import { basePrice, type Offering } from "./types";
+
+/** Prices come from the catalog; foam packages already include sound. */
+export function packagePrice(item: Offering, offerings: Offering[], includeSound = false) {
+  const base = basePrice(item);
+  const soundAlreadyIncluded = item.parts.some(part => part.service_slug === "foam" || part.service_slug === "sound");
+  const addonSound = includeSound && !soundAlreadyIncluded;
+  const sound = offerings.find(offering => offering.slug === "sound");
+  const soundPrice = sound && basePrice(sound);
+  return {
+    base,
+    addonSound,
+    soundPrice: addonSound ? soundPrice : 0,
+    total: addonSound ? (base !== undefined && soundPrice !== undefined ? base + soundPrice : undefined) : base,
+  };
+}
 
 const packageOrder = ["full-party", "ice-breath", "sweet-vibe", "silver-party", "foam-party"];
 export function sortPackages(items: Offering[]) {

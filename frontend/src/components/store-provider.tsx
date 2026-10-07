@@ -5,14 +5,15 @@ import { useRef } from "react";
 
 const selection = createSlice({
   name: "selection",
-  initialState: { open: false, offering: "", character: "", tariff: "", addons: [] as string[] },
+  initialState: { open: false, offering: "", character: "", tariff: "", addons: [] as string[], soundRequired: false },
   reducers: {
-    choose: (state, action: PayloadAction<{ offering?: string; character?: string; tariff?: string; addons?: string[] }>) => {
+    choose: (state, action: PayloadAction<{ offering?: string; character?: string; tariff?: string; addons?: string[]; soundRequired?: boolean }>) => {
       state.open = true;
       state.offering = action.payload.offering || "";
       state.character = action.payload.character || "";
       state.tariff = action.payload.tariff || "";
-      state.addons = action.payload.addons || [];
+      state.soundRequired = !!action.payload.soundRequired;
+      state.addons = [...new Set([...(action.payload.addons || []), ...(state.soundRequired ? ["sound"] : [])])];
     },
     close: state => { state.open = false; },
   },
