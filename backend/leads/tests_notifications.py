@@ -2,6 +2,7 @@ from django.conf import settings
 from datetime import timedelta
 from io import StringIO
 import json
+import ssl
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
@@ -98,6 +99,27 @@ class NotificationTests(TestCase):
         self.assertEqual(self.notification.attempts, 0)
         self.assertEqual(self.notification.status, Notification.Status.PENDING)
 
+    @patch("urllib.request.getproxies", return_value={})
+    @patch("socket.create_connection", side_effect=TimeoutError("connect timeout"))
+    def test_connection_failure_keeps_lead_and_later_sends_once(self, connect, proxies):
+        before = timezone.now()
+        self.assertTrue(process_one())
+        self.refresh()
+        self.assertEqual(self.notification.status, Notification.Status.PENDING)
+        self.assertEqual(self.notification.attempts, 1)
+        self.assertGreaterEqual(self.notification.next_attempt_at, before + timedelta(seconds=60))
+        self.assertEqual(self.lead.status, Lead.Status.NEW)
+        self.assertFalse(process_one())
+        Notification.objects.filter(pk=self.notification.pk).update(next_attempt_at=timezone.now())
+        with patch("leads.notifications.bot_request", return_value={"message_id": 99}) as send:
+            self.assertTrue(process_one())
+            self.assertFalse(process_one())
+            send.assert_called_once()
+        self.refresh()
+        self.assertEqual(self.notification.status, Notification.Status.SENT)
+        self.assertEqual(self.notification.attempts, 2)
+        self.assertEqual(self.notification.message_id, 99)
+
     @patch("leads.notifications.bot_request", side_effect=TelegramError("Бот заблокирован"))
     def test_permanent_error_preserves_lead(self, send):
         process_one()
@@ -147,6 +169,37 @@ class NotificationTests(TestCase):
 
 
 class TelegramTransportTests(TestCase):
+    @patch("urllib.request.getproxies", return_value={})
+    @patch("socket.socket.sendall")
+    @patch("socket.create_connection", side_effect=TimeoutError("private network detail"))
+    def test_tcp_timeout_before_post_is_safe_to_retry(self, connect, send, proxies):
+        with self.assertRaises(TelegramError) as caught:
+            bot_request("123:fake-token", "sendMessage", {"text": "Test"})
+        self.assertFalse(caught.exception.uncertain)
+        self.assertEqual(caught.exception.retry_after, 60)
+        self.assertNotIn("private", str(caught.exception))
+        send.assert_not_called()
+
+    @patch("urllib.request.getproxies", return_value={})
+    @patch("ssl.SSLContext.wrap_socket", side_effect=ssl.SSLError("handshake failed"))
+    @patch("socket.create_connection")
+    def test_tls_failure_before_post_is_safe_to_retry(self, connect, wrap, proxies):
+        with self.assertRaises(TelegramError) as caught:
+            bot_request("123:fake-token", "sendMessage")
+        self.assertFalse(caught.exception.uncertain)
+        self.assertEqual(caught.exception.retry_after, 60)
+        self.assertEqual(wrap.call_args.kwargs["server_hostname"], "api.telegram.org")
+        connect.return_value.sendall.assert_not_called()
+
+    @patch("urllib.request.getproxies", return_value={})
+    @patch("leads.telegram.TelegramHTTPSConnection.connect")
+    @patch("http.client.HTTPConnection.send", side_effect=TimeoutError("write failed"))
+    def test_timeout_after_connection_remains_uncertain(self, send, connect, proxies):
+        with self.assertRaises(TelegramError) as caught:
+            bot_request("123:fake-token", "sendMessage")
+        self.assertTrue(caught.exception.uncertain)
+        self.assertIsNone(caught.exception.retry_after)
+
     @patch("leads.telegram.build_opener")
     def test_plain_json_post_with_timeout(self, opener):
         response = Mock()

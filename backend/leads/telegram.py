@@ -1,9 +1,9 @@
 """Telegram transport. Never persist remote descriptions or token-bearing exceptions."""
 import json
 import re
-from http.client import HTTPException
+from http.client import HTTPException, HTTPSConnection
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, build_opener, HTTPRedirectHandler
+from urllib.request import Request, build_opener, HTTPRedirectHandler, HTTPSHandler
 
 
 class TelegramError(Exception):
@@ -18,6 +18,26 @@ class NoRedirect(HTTPRedirectHandler):
         return None  # Do not forward the bot token to a redirected host.
 
 
+class ConnectionNotEstablished(OSError):
+    """No Telegram HTTP request has been written; retry cannot duplicate it."""
+
+
+class TelegramHTTPSConnection(HTTPSConnection):
+    def connect(self):
+        # DNS, TCP, proxy tunnel and TLS all finish before HTTP sends the POST.
+        try:
+            super().connect()
+        except (OSError, HTTPException):
+            self.close()
+            raise ConnectionNotEstablished("Telegram connection failed") from None
+
+
+class TelegramHTTPSHandler(HTTPSHandler):
+    def https_open(self, request):
+        return self.do_open(TelegramHTTPSConnection, request,
+                            context=self._context)
+
+
 def bot_request(token, method, payload=None):
     if not re.fullmatch(r"\d+:[A-Za-z0-9_-]+", token):
         raise TelegramError("Некорректный токен бота")
@@ -27,7 +47,7 @@ def bot_request(token, method, payload=None):
                       data=json.dumps(payload or {}).encode("utf-8"),
                       headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with build_opener(NoRedirect()).open(request, timeout=10) as response:
+        with build_opener(NoRedirect(), TelegramHTTPSHandler()).open(request, timeout=10) as response:
             body = response.read(1024 * 1024)
     except HTTPError as error:
         try:
@@ -35,7 +55,13 @@ def bot_request(token, method, payload=None):
         except (ValueError, OSError):
             data = {}
         raise api_error(error.code, data) from None
-    except (URLError, TimeoutError, OSError, HTTPException):
+    except URLError as error:
+        if isinstance(error.reason, ConnectionNotEstablished):
+            raise TelegramError("Соединение с Telegram не установлено", retry_after=60) from None
+        raise TelegramError("Нет подтверждения от Telegram: ошибка сети", uncertain=True) from None
+    except ConnectionNotEstablished:
+        raise TelegramError("Соединение с Telegram не установлено", retry_after=60) from None
+    except (TimeoutError, OSError, HTTPException):
         raise TelegramError("Нет подтверждения от Telegram: ошибка сети", uncertain=True) from None
     try:
         data = json.loads(body)
