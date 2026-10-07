@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { track } from "@/lib/analytics";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Character } from "@/lib/types";
 import { CharacterCard } from "./cards";
@@ -33,12 +34,17 @@ export function CharacterCatalog({ characters }: { characters: Character[] }) {
       return categoryRank(a.category) - categoryRank(b.category) || a.category.localeCompare(b.category, "ru") || heroRank(a.slug) - heroRank(b.slug) || byName();
     });
   }, [characters, category, search, sortOrder]);
+  useEffect(() => {
+    if (!search.trim()) return;
+    const timer = setTimeout(() => track("catalog_search", {results: filtered.length}), 800);
+    return () => clearTimeout(timer);
+  }, [search, filtered.length]);
   return <>
     <div className="catalog-tools">
       <div className="catalog-search"><label htmlFor="character-search">Найти героя</label><div className="search-wrap"><Search size={20} /><input id="character-search" type="search" placeholder="Кто любимый герой вашего ребёнка?" value={search} onChange={event => setSearch(event.target.value)} />{search && <button aria-label="Очистить поиск" onClick={() => setSearch("")}><X size={17} /></button>}</div></div>
-      <label className="catalog-sort"><span>Порядок героев</span><select value={sortOrder} onChange={event => setSortOrder(event.target.value as SortOrder)}><option value="category">По категориям</option><option value="popular">Популярные сначала</option><option value="name">По имени: А–Я</option></select></label>
+      <label className="catalog-sort"><span>Порядок героев</span><select value={sortOrder} onChange={event => { track("catalog_filter", {action: "sort", sort: event.target.value}); setSortOrder(event.target.value as SortOrder); }}><option value="category">По категориям</option><option value="popular">Популярные сначала</option><option value="name">По имени: А–Я</option></select></label>
     </div>
-    <div className="category-tabs" aria-label="Категории персонажей">{categories.map(item => <button key={item} aria-pressed={item === category} onClick={() => setCategory(item)}>{shortNames[item] || item}</button>)}</div>
+    <div className="category-tabs" aria-label="Категории персонажей">{categories.map(item => <button key={item} aria-pressed={item === category} onClick={() => { track("catalog_filter", {action: "filter", category_index: categories.indexOf(item)}); setCategory(item); }}>{shortNames[item] || item}</button>)}</div>
     <div className="catalog-results"><span className="catalog-count" aria-live="polite"><SlidersHorizontal size={16} /> Найдено: {filtered.length}</span><p className="catalog-sort-note">{sortOrder === "popular" ? "Сначала — самые востребованные герои «Мира Улыбок»." : sortOrder === "name" ? "Герои в алфавитном порядке." : "Большие герои → Новый год → супергерои → игры и тренды → приключения → мультфильмы."}</p></div>
     {filtered.length ? <div className="character-grid">{filtered.map((character, index) => <CharacterCard key={character.slug} character={character} index={index} headingLevel={2} />)}</div> : <div className="empty-search"><h2>Такого героя пока не нашли</h2><p>Попробуйте другое имя или посмотрите весь каталог.</p><button className="button outline" onClick={() => { setSearch(""); setCategory("Все герои"); }}>Показать всех</button></div>}
   </>;

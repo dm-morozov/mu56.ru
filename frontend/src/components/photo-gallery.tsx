@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Maximize2, X } from "lucide-react";
@@ -15,8 +16,9 @@ export function PhotoGallery({ photos, title, description, eyebrow = "Такие
   const touch = useRef<{ x: number; y: number } | null>(null);
   const open = active !== null;
   const photo = active === null ? null : photos[active];
-  const move = (step: number) => setActive(index => index === null ? null : (index + step + photos.length) % photos.length);
+  const move = (step: number) => { track("media_interact", {media: "gallery", action: step > 0 ? "next" : "previous"}); setActive(index => index === null ? null : (index + step + photos.length) % photos.length); };
   const openPhoto = (index: number, button: HTMLButtonElement) => {
+    track("media_interact", {media: "gallery", action: "open"});
     trigger.current = button;
     setActive(index);
   };

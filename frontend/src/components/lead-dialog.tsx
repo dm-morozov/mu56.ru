@@ -10,6 +10,8 @@ import { PhoneInput } from "./phone-input";
 import { close, useAppDispatch, useSelection } from "./store-provider";
 import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
 import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
+import { track, priceBand } from "@/lib/analytics";
+import { FormJourney } from "@/lib/form-journey";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
@@ -30,6 +32,8 @@ function openMobileDateTimePicker(event: React.MouseEvent<HTMLInputElement>) {
 export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const offerings = useMemo(() => bookingOfferings(catalog), [catalog]);
   const ref = useRef<HTMLDialogElement>(null);
+  const journey = useRef<FormJourney | null>(null);
+  if (!journey.current) journey.current = new FormJourney(track);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
   const selection = useSelection(), dispatch = useAppDispatch();
@@ -73,6 +77,27 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
   useEffect(() => {
+    if (selection.open) journey.current?.open({ program: selection.offering || "unknown", hero: selection.character || "unknown", details: !!(selection.offering || selection.character || selection.tariff || selection.addons?.length) });
+    else journey.current?.close("close");
+  }, [selection.open]);
+  useEffect(() => {
+    journey.current?.update({ program: programSlug || "unknown", hero: heroSlug || "unknown", kind: program?.kind || "unknown", addon_count: addons.length, price_band: priceBand(pricedComposition ? quote ? quote.amount_rub + extraAmount : undefined : simpleTotal) });
+  }, [programSlug, heroSlug, program?.kind, addons.length, quote, extraAmount, pricedComposition, simpleTotal]);
+  useEffect(() => {
+    const hide = () => journey.current?.close("pagehide");
+    const show = () => { if (ref.current?.open) journey.current?.resume(); };
+    window.addEventListener("pagehide", hide); window.addEventListener("pageshow", show);
+    return () => { window.removeEventListener("pagehide", hide); window.removeEventListener("pageshow", show); };
+  }, []);
+  function fieldName(target: EventTarget) {
+    const el = target as HTMLInputElement;
+    return el.name || (el.closest?.(".hero-picker") ? "hero" : el.type === "checkbox" && el.closest?.(".lead-addons") ? "addons" : el.tagName === "SELECT" ? "tariff" : "unknown");
+  }
+  function changed(event: React.FormEvent<HTMLFormElement>) {
+    const el = event.target as HTMLInputElement;
+    journey.current?.change(fieldName(el), el.name === "phone" && el.value.replace(/\D/g, "").length === 11 && el.validity.valid);
+  }
+  useEffect(() => {
     if (selection.open) { setEventDate(""); setEventTime(""); setDetailsOpen(!!(selection.offering || selection.character || selection.tariff || selection.addons?.length)); setSuccess(false); setError(""); setSecondPerformer(false); setSecondHeroSlug(""); setAddons(addonOnly(selection.offering) ? [...new Set([...(selection.addons || []), selection.offering])] : selection.addons || []); setQuote(null); setProgramSlug(addonOnly(selection.offering) ? "animation" : selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
     else ref.current?.close();
   }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons]);
@@ -97,10 +122,13 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || scheduleError || (pricedComposition && !quote)) return;
     const form = event.currentTarget, data = new FormData(form);
+    journey.current?.submit();
+    let failureReason = "unknown", failureStatus = 0;
     let requestSent = false;
     setBusy(true); setError("");
     try {
       const csrf = await fetch("/api/v1/csrf/", { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(15000) });
+      if (!csrf.ok) { failureReason = "csrf"; failureStatus = csrf.status; }
       if (!csrf.ok) throw new Error("Сейчас не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.");
       const { csrf_token } = await csrf.json();
       const selectedOffering = offerings.find(item => item.slug === data.get("offering"));
@@ -119,12 +147,14 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
       requestSent = true;
       const response = await fetch("/api/v1/leads/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token }, body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
       if (!response.ok) {
+        failureStatus = response.status; failureReason = response.status === 429 ? "rate_limit" : response.status >= 500 ? "server" : "validation";
         const result = await response.json().catch(() => ({}));
         const field = Object.values(result)[0];
         throw new Error(response.status === 429 ? "Слишком много попыток. Можно связаться с нами по телефону." : typeof field === "string" ? field : Array.isArray(field) ? field.join(" ") : "Не удалось отправить заявку. Проверьте данные и попробуйте снова.");
       }
-      setSuccess(true); form.reset();
+      journey.current?.success(); setSuccess(true); form.reset();
     } catch (err) {
+      journey.current?.error(err instanceof Error && ["AbortError", "TimeoutError"].includes(err.name) ? "timeout" : err instanceof Error && err.name === "TypeError" ? "network" : failureReason, failureStatus);
       const connectionError = err instanceof Error && ["TypeError", "AbortError", "TimeoutError", "SyntaxError"].includes(err.name);
       setError(connectionError
         ? requestSent
@@ -142,26 +172,26 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     <button className="dialog-close" aria-label="Закрыть форму" disabled={busy} onClick={() => dispatch(close())}><X /></button>
     {success ? <div className="form-success"><span><Check /></span><h2 id="lead-success-title" ref={successRef} tabIndex={-1}>Первый шаг к празднику сделан!</h2><p>Заявка сохранена. Обсудим с вами дату, программу и выезд.</p><button className="button orange" onClick={() => dispatch(close())}>Отлично</button></div> : <>
       <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">{detailsOpen ? "Выберите состав праздника. Дату и детали согласуем с вами." : "Оставьте телефон — поможем выбрать программу. Дату и героя можно решить вместе."}</p>
-      <form onSubmit={submit}>
+      <form className="ym-disable-keys" onSubmit={submit} onChange={changed} onFocusCapture={event => journey.current?.focus(fieldName(event.target))} onInvalidCapture={event => journey.current?.invalid(fieldName(event.target))}>
         <fieldset className="lead-fields" disabled={busy}>
         <div className="form-row"><label>Ваше имя<input name="name" autoComplete="given-name" maxLength={100} placeholder="Как к вам обращаться" /></label><label>Телефон<PhoneInput /></label></div>
         <label>Как связаться<select name="contact_method"><option value="phone">Позвонить</option><option value="telegram">Telegram</option><option value="max">MAX</option></select></label>
-        <button type="button" className="lead-details-toggle" aria-expanded={detailsOpen} aria-controls="lead-program-details" onClick={() => setDetailsOpen(value => !value)}><span>{detailsOpen ? "Свернуть детали праздника" : "Указать дату и выбрать программу"}<small>{detailsOpen ? "Ваш выбор сохранится в заявке" : "Необязательно — можно обсудить с нами"}</small></span><span aria-hidden="true">{detailsOpen ? "−" : "+"}</span></button>
+        <button type="button" className="lead-details-toggle" aria-expanded={detailsOpen} aria-controls="lead-program-details" onClick={() => { if (!detailsOpen) track("details_open"); journey.current?.change("details"); setDetailsOpen(value => !value); }}><span>{detailsOpen ? "Свернуть детали праздника" : "Указать дату и выбрать программу"}<small>{detailsOpen ? "Ваш выбор сохранится в заявке" : "Необязательно — можно обсудить с нами"}</small></span><span aria-hidden="true">{detailsOpen ? "−" : "+"}</span></button>
         {!detailsOpen && program && <p className="lead-selection-summary">Выбрано: {program.name}{heroSlug ? ` · ${availableHeroes.find(hero => hero.slug === heroSlug)?.name || "герой выбран"}` : ""}{addons.length ? ` · дополнений: ${addons.length}` : ""}. Детали сохранены.</p>}
         <div id="lead-program-details" hidden={!detailsOpen}>
         <div className="form-row"><label>Дата праздника<input name="event_date" type="date" value={eventDate} onClick={openMobileDateTimePicker} onInput={event => setEventDate(event.currentTarget.value)} onChange={event => setEventDate(event.target.value)} /></label><label>Время начала программы<input name="event_time" type="time" value={eventTime} onClick={openMobileDateTimePicker} onInput={event => setEventTime(event.currentTarget.value)} onChange={event => setEventTime(event.target.value)} aria-describedby="event-time-help" /></label></div>
         <p id="event-time-help" className="hero-picker-help event-time-help">Время по Оренбургу. Начало программы лучше планировать на 15 минут позже сбора гостей.</p>
-        <ProgramPicker offerings={offerings} value={programSlug} label={transformer ? "Большой герой и программа" : "Программа"} onChange={slug => { setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }} />
+        <ProgramPicker offerings={offerings} value={programSlug} label={transformer ? "Большой герой и программа" : "Программа"} onChange={slug => { track("program_select", {program: slug || "unknown"}); journey.current?.change("offering"); setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }} />
         {packaged && <section className="lead-package" aria-labelledby="lead-package-title">
           <h3 id="lead-package-title">{program.name}<span>{packageBase === undefined ? "Стоимость уточним" : rubles(packageBase)}</span></h3>
           <fieldset className="lead-addons package-inclusions" aria-labelledby="package-inclusions-title"><h4 id="package-inclusions-title">В программу входит</h4><p>Все пункты включены в пакет. Чтобы изменить состав, выберите другую программу.</p>{program.parts.map(part => <PackagePart key={`${program.slug}-${part.position}`} part={part} description={!part.led_by_performer ? "После анимации и шоу колонка продолжает играть фоновую музыку, пока аниматоры собирают всё оборудование на вашем празднике. Колонку забирают в последнюю очередь, когда остальное оборудование уже сложено. В это время ведущие не проводят игры, конкурсы и шоу." : offerings.find(item => item.slug === part.service_slug)?.description} />)}</fieldset>
           <p className="hero-picker-help">{soundIncluded ? "Комплект звука уже включён в программу. Стоимость выезда согласуем отдельно." : addons.includes("sound") ? "Комплект звука выбран и учтён в итоговой стоимости. Стоимость выезда согласуем отдельно." : "Звук и стоимость выезда согласуем отдельно до праздника."}</p>
         </section>}
-        {availableHeroes.length > 0 && <HeroPicker key={`${selection.open}-${programSlug}`} heroes={availableHeroes} value={heroSlug} onChange={setHeroSlug} label={transformer ? "Второй герой" : "Герой анимации"} />}
+        {availableHeroes.length > 0 && <HeroPicker key={`${selection.open}-${programSlug}`} heroes={availableHeroes} value={heroSlug} onChange={slug => { track("hero_select", {hero: slug || "unknown"}); journey.current?.change("hero"); setHeroSlug(slug); }} label={transformer ? "Второй герой" : "Герой анимации"} />}
         {transformer && <p className="lead-choice-note"><strong>{program.characters.find(hero => hero.slug === program.slug)?.name || program.name}</strong> + второй герой. Оба входят в цену{basePrice(program) ? ` — ${rubles(basePrice(program)!)} за программу` : ""}.<br />Хотите двух трансформеров? Напишите в пожеланиях — цену обсудим.</p>}
         {packaged && <>
           <fieldset className="lead-addons"><legend>Состав команды</legend><p>В базовую цену {program.included_performers === 1 ? "входит один аниматор" : `входят участники команды: ${program.included_performers}`}. Первого героя выберите выше. Второй аниматор участвует в анимации и шоу; фоновая музыка в конце — без ведущих.</p>{secondTariff ? <label><input type="checkbox" name="second_performer" checked={secondPerformer} onChange={event => { setSecondPerformer(event.target.checked); setSecondHeroSlug(""); }} /><span>Добавить второго аниматора на всю программу<small>+ {rubles(secondTariff.amount_rub)}</small></span></label> : <p>Дополнительного ведущего и стоимость согласуем отдельно.</p>}</fieldset>
-          {secondPerformer && secondTariff && <HeroPicker heroes={availableHeroes} value={secondHeroSlug} onChange={setSecondHeroSlug} label="Второй герой" />}
+          {secondPerformer && secondTariff && <HeroPicker heroes={availableHeroes} value={secondHeroSlug} onChange={slug => { track("hero_select", {hero: slug || "unknown", field: "second_hero"}); journey.current?.change("second_hero"); setSecondHeroSlug(slug); }} label="Второй герой" />}
 
         </>}
         {pricedComposition && <>

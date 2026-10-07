@@ -294,3 +294,4 @@
 h2 em,.hero h1 span,.season-copy h2 em,.new-year-intro h2 em{color:var(--orange-ink)}
 .article-number{color:#737869;opacity:1}
 .package-card .package-card-title{font-weight:700;line-height:1.4}
+.analytics-notice{position:fixed;z-index:80;bottom:18px;left:18px;max-width:520px;padding:18px;background:var(--paper);border:1px solid #ccd3c9;border-radius:16px;box-shadow:0 8px 35px #142b3b26}.analytics-notice p{font-size:13px;line-height:1.6;margin:0 0 12px}.analytics-notice a{text-decoration:underline}.analytics-notice>div{display:flex;gap:10px;flex-wrap:wrap}.analytics-notice .button{font-size:12px;padding:11px 16px;min-height:44px}.analytics-settings{background:none;border:0;color:inherit;padding:0;cursor:pointer;font:inherit;text-decoration:underline}@media(max-width:600px){.analytics-notice{left:12px;right:12px;bottom:12px;max-width:none;padding:15px}.analytics-notice>div{display:grid;grid-template-columns:1fr 1fr}.analytics-notice .button{padding:10px 8px}}

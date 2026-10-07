@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
 import "@fontsource/unbounded/600.css";
 import "./globals.css";
+import { SiteAnalytics } from "@/components/site-analytics";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { StoreProvider } from "@/components/store-provider";
@@ -21,5 +22,5 @@ export const metadata: Metadata = {
 };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const offerings = await getOfferings();
-  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><Header />{children}<Footer /><BookingDialog catalog={bookingCatalog(offerings)} /></StoreProvider></body></html>;
+  return <html lang="ru" data-scroll-behavior="smooth"><body><StructuredData data={organization} /><StoreProvider><a className="skip-link" href="#main">К содержимому</a><SiteAnalytics enabled={indexingEnabled} /><Header />{children}<Footer /><BookingDialog catalog={bookingCatalog(offerings)} /></StoreProvider></body></html>;
 }
