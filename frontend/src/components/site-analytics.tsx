@@ -6,6 +6,14 @@ import { ANALYTICS_CHOICE, METRIKA_ID, safePath, track } from "@/lib/analytics";
 import { useSelection } from "./store-provider";
 
 function choice() { try { return localStorage.getItem(ANALYTICS_CHOICE); } catch { return null; } }
+const DISMISSED_UNTIL = "mu56-analytics-dismissed-until";
+const DISMISS_DURATION = 24 * 60 * 60 * 1000;
+function dismissalExpiry() {
+  try {
+    const expiry = Number(localStorage.getItem(DISMISSED_UNTIL));
+    return Number.isFinite(expiry) && expiry > 0 ? expiry : 0;
+  } catch { return 0; }
+}
 function stop() {
   window.mu56AnalyticsReady = false;
   try { window.ym?.(METRIKA_ID, "destruct"); } catch { /* Blocking analytics must not block the site. */ }
@@ -23,16 +31,29 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
   const pathname = usePathname();
   const selection = useSelection();
   const [ready, setReady] = useState(false), [show, setShow] = useState(false);
+  const [dismissedUntil, setDismissedUntil] = useState(0);
   const previous = useRef<string | null>(null);
   useEffect(() => {
     if (!enabled || location.hostname !== "mu56.ru") return;
-    function sync() { setShow(!choice()); setReady(choice() === "accepted"); if (choice() !== "accepted") stop(); }
+    function sync() {
+      const accepted = choice() === "accepted", expiry = dismissalExpiry();
+      setDismissedUntil(accepted ? 0 : expiry);
+      setShow(!accepted && expiry <= Date.now()); setReady(accepted);
+      if (!accepted) stop();
+    }
     function settings() { setShow(true); }
     sync();
     window.addEventListener("mu56-analytics-settings", settings);
     window.addEventListener("storage", sync);
     return () => { window.removeEventListener("mu56-analytics-settings", settings); window.removeEventListener("storage", sync); };
   }, [enabled]);
+  useEffect(() => {
+    if (!enabled || location.hostname !== "mu56.ru" || ready || !dismissedUntil) return;
+    const timer = window.setTimeout(() => {
+      if (choice() !== "accepted" && dismissalExpiry() <= Date.now()) setShow(true);
+    }, Math.min(Math.max(0, dismissedUntil - Date.now()), DISMISS_DURATION));
+    return () => window.clearTimeout(timer);
+  }, [enabled, ready, dismissedUntil]);
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
@@ -90,9 +111,19 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
     return () => { document.removeEventListener("click", click); document.removeEventListener("play", video, true); document.removeEventListener("ended", video, true); };
   }, []);
   function choose(accepted: boolean) {
-    try { localStorage.setItem(ANALYTICS_CHOICE, accepted ? "accepted" : "denied"); } catch { stop(); setReady(false); setShow(false); return; }
+    const expiry = accepted ? 0 : Date.now() + DISMISS_DURATION;
+    try {
+      localStorage.setItem(ANALYTICS_CHOICE, accepted ? "accepted" : "denied");
+      if (accepted) localStorage.removeItem(DISMISSED_UNTIL);
+      else localStorage.setItem(DISMISSED_UNTIL, String(expiry));
+    } catch { stop(); setReady(false); setShow(false); return; }
+    setDismissedUntil(expiry);
     if (!accepted) stop(); setReady(accepted); setShow(false);
   }
   if (!show || selection.open || !safePath(pathname || "")) return null;
-  return <aside className="analytics-notice" aria-label="Настройки аналитики"><p>Поможете сделать сайт удобнее? С вашего согласия Яндекс Метрика собирает статистику посещений и действий. Содержимое формы не записываем. <Link href="/privacy">Подробнее</Link></p><div><button type="button" className="button orange" onClick={() => choose(true)}>Разрешить аналитику</button><button type="button" className="button outline" onClick={() => choose(false)}>Без аналитики</button></div></aside>;
+  return <aside className="analytics-notice" aria-label="Настройки аналитики">
+    <button type="button" className="analytics-notice-close" aria-label="Закрыть без включения аналитики" onClick={() => choose(false)}><span aria-hidden="true">×</span></button>
+    <p>С вашего согласия используем cookies и Яндекс.Метрику для статистики посещений и действий. <Link href="/privacy">Подробнее</Link></p>
+    <div><button type="button" className="button orange" onClick={() => choose(true)}>Согласен</button></div>
+  </aside>;
 }
