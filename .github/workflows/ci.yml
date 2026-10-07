@@ -7,12 +7,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   application:
+    concurrency:
+      group: checks-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
@@ -53,6 +52,25 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Detect image source changes
+        id: changes
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        shell: bash
+        run: |
+          rebuild=false
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = 0000000000000000000000000000000000000000 ]; then
+              rebuild=true
+            else
+              git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" > /tmp/mu56-image-paths
+              if grep -Eq '^(backend/|frontend/|deploy/(requirements\.txt|gunicorn\.conf\.py|docker/(backend|frontend)\.Dockerfile)|\.github/workflows/ci\.yml)' /tmp/mu56-image-paths; then
+                rebuild=true
+              fi
+            fi
+          fi
+          printf 'images=%s\n' "$rebuild" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12.14'
@@ -104,7 +122,7 @@ jobs:
           pnpm --dir frontend typecheck
       - name: Build and publish pinned Docker images
         id: images
-        if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006' && steps.changes.outputs.images == 'true'
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -128,7 +146,7 @@ jobs:
             printf '%s=%s\n' "$service" "$digest" >> "$GITHUB_OUTPUT"
           done
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006' && needs.application.outputs.backend != ''
     needs: application
     runs-on: ubuntu-24.04
     timeout-minutes: 25

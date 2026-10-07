@@ -60,6 +60,18 @@ class PayloadTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError): controller.main()
                 self.assertEqual(switch.call_args_list[1].args[0], old)
                 self.assertFalse((root/'releases/current.json').exists())
+
+    def test_worker_is_updated_when_enabled(self):
+        images = {'BACKEND_IMAGE': self.payload()['backend'], 'FRONTEND_IMAGE': self.payload()['frontend']}
+        with patch.object(controller, 'write_images'), patch.object(controller, 'ready'), \
+             patch.object(controller, 'compose', return_value='worker-id') as compose:
+            controller.switch(images, worker=True)
+            self.assertIn(unittest.mock.call(['up', '-d', '--no-deps', 'worker']), compose.call_args_list)
+
+    def test_failed_worker_is_not_a_successful_release(self):
+        with patch.object(controller, 'write_images'), patch.object(controller, 'ready'), \
+             patch.object(controller, 'compose', return_value=''):
+            with self.assertRaises(RuntimeError): controller.switch({}, worker=True)
         payload = self.payload(); payload['sha'] = 'main'
         with self.assertRaises(ValueError): controller.validate(payload)
 

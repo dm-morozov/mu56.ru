@@ -1,0 +1,7 @@
+# Optional targeted workaround; hostname and TLS validation remain unchanged.
+# Used only after verifying api.telegram.org at this IPv4 from the target VPS.
+services:
+  gateway:
+    extra_hosts: ['api.telegram.org:149.154.167.220']
+  worker:
+    extra_hosts: ['api.telegram.org:149.154.167.220']

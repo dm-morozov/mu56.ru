@@ -68,11 +68,15 @@ def ready():
             time.sleep(2)
     raise RuntimeError('Readiness failed')
 
-def switch(images):
+def switch(images, worker=False):
     write_images(images)
     compose(['up', '-d', '--no-deps', 'backend', 'frontend'])
     compose(['exec', '-T', 'backend', 'python', 'manage.py', 'collectstatic', '--noinput'])
     ready()
+    if worker:
+        compose(['up', '-d', '--no-deps', 'worker'])
+        if not compose(['ps', '--status', 'running', '-q', 'worker']).strip():
+            raise RuntimeError('Notification worker did not start')
 
 def main():
     if sys.argv[1:] not in (['release'], ['rollback']):
@@ -82,9 +86,7 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if shutil.disk_usage(ROOT).free < 4*1024**3:
             raise RuntimeError('Less than 4 GiB free')
-        # Worker support is a separate reviewed change once Telegram is enabled.
-        if compose(['ps', '--status', 'running', '-q', 'worker']).strip():
-            raise RuntimeError('Worker is active: use reviewed maintenance procedure')
+        worker = bool(compose(['ps', '--status', 'running', '-q', 'worker']).strip())
         old = {key: value for key, value in
                (line.split('=', 1) for line in (ROOT/'.env').read_text().splitlines()
                 if '=' in line) if key in ('BACKEND_IMAGE', 'FRONTEND_IMAGE')}
@@ -119,9 +121,9 @@ def main():
                      'migrate', '--check'], images)
         run(['/usr/bin/systemctl', 'start', 'mu56-docker-backup.service'])
         try:
-            switch(images)
+            switch(images, worker=worker)
         except Exception:
-            switch(old)
+            switch(old, worker=worker)
             raise RuntimeError('Update failed; previous images restored')
         atomic(STATE/'previous.json', json.dumps(old_state))
         atomic(current, json.dumps(new_state))
