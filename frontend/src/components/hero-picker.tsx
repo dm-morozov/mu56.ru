@@ -57,7 +57,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
   return <div className="hero-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
     <label htmlFor={`${id}-input`}>{label}</label>
     <div className="hero-picker-input"><Search size={17} aria-hidden="true" />
-      <input ref={input} id={`${id}-input`} role="combobox" type="text" autoComplete="off" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} aria-describedby={`${id}-help`} placeholder="Согласуем позже — или найдите героя" value={open ? query : selected?.name || ""}
+      <input ref={input} id={`${id}-input`} name="hero-search" role="combobox" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} aria-describedby={`${id}-help`} placeholder="Согласуем позже — или найдите героя" value={open ? query : selected?.name || ""}
         onFocus={() => { setOpen(true); setQuery(""); setActive(0); }}
         onClick={() => { if (!open) { setOpen(true); setQuery(""); setActive(0); } }}
         onChange={event => { const text = event.target.value; setQuery(text); setOpen(true); setActive(text.trim() ? 1 : 0); }}
