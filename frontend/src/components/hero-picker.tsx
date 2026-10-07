@@ -9,6 +9,7 @@ const normalize = (text: string) => text.toLocaleLowerCase("ru").replace(/ё/g, 
 export function HeroPicker({ heroes, value, onChange, label }: { heroes: Character[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const resultStatus = useRef<HTMLParagraphElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -34,27 +35,39 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
   }, [open, activeIndex, id]);
   useEffect(() => {
     if (!open) return;
-    function revealStatus() {
+    function revealPicker() {
+      if (!window.matchMedia("(max-width: 600px)").matches) return;
+      const picker = root.current;
       const status = resultStatus.current;
-      const dialog = status?.closest<HTMLDialogElement>("dialog");
-      if (!status || !dialog) return;
+      const dialog = picker?.closest<HTMLDialogElement>("dialog");
+      if (!picker || !status || !dialog) return;
       const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop || 0;
       const viewportBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
       const bounds = dialog.getBoundingClientRect();
+      const visibleTop = Math.max(bounds.top + dialog.clientTop, viewportTop) + 12;
+      dialog.scrollTop += picker.getBoundingClientRect().top - visibleTop;
       const visibleBottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, viewportBottom) - 12;
-      const overflow = status.getBoundingClientRect().bottom - visibleBottom;
-      if (overflow > 0) dialog.scrollTop += overflow;
+      const list = picker.querySelector<HTMLElement>(".hero-picker-list");
+      if (list) {
+        const statusHeight = status.getBoundingClientRect().height;
+        const available = visibleBottom - list.getBoundingClientRect().top - statusHeight;
+        picker.style.setProperty("--hero-list-height", `${Math.max(44, Math.min(264, available))}px`);
+      }
     }
-    const frame = requestAnimationFrame(revealStatus);
-    window.addEventListener("resize", revealStatus);
-    window.visualViewport?.addEventListener("resize", revealStatus);
+    const frame = requestAnimationFrame(revealPicker);
+    window.addEventListener("resize", revealPicker);
+    window.visualViewport?.addEventListener("resize", revealPicker);
+    window.visualViewport?.addEventListener("scroll", revealPicker);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", revealStatus);
-      window.visualViewport?.removeEventListener("resize", revealStatus);
+      window.removeEventListener("resize", revealPicker);
+      window.visualViewport?.removeEventListener("resize", revealPicker);
+      window.visualViewport?.removeEventListener("scroll", revealPicker);
+      root.current?.style.removeProperty("--hero-list-height");
     };
   }, [open]);
-  return <div className="hero-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
+  return <div ref={root} className="hero-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
     <label htmlFor={`${id}-input`}>{label}</label>
     <div className="hero-picker-input"><Search size={17} aria-hidden="true" />
       <input ref={input} id={`${id}-input`} name="hero-search" role="combobox" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} aria-describedby={`${id}-help`} placeholder="Найти героя" value={open ? query : selected?.name || ""}

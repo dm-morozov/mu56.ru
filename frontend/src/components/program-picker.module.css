@@ -5,8 +5,9 @@
 .trigger svg,.option svg{flex-shrink:0}
 .trigger:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
 .list{margin-top:7px;max-height:min(360px,48dvh);overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:8px;border:1px solid #ccd3c9;border-radius:12px;background:white;padding:6px}
-.heading{padding:12px 10px 6px;font-size:11px;font-weight:800;color:var(--muted)}
+.heading{margin:12px 0 3px;padding:4px 10px;font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--muted)}
 .option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:10px;border-radius:7px;font-size:13px;line-height:1.5;color:var(--navy);cursor:pointer;overflow-wrap:anywhere}
-.active,.option:hover{background:#fff0e4}
-.option[aria-selected=true]{font-weight:700}
+.active{outline:1px solid var(--navy);outline-offset:-2px}
+.option[aria-selected=true]{background:#fff0e4;font-weight:700}
+@media(hover:hover) and (pointer:fine){.option:not([aria-selected=true]):hover{background:#f5f6f3}}
 @media(max-width:600px){.trigger{font-size:16px}.option{font-size:14px}}

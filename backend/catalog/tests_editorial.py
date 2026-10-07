@@ -32,7 +32,7 @@ class EditorialTests(TestCase):
         review.is_published = False
         review.save()
         data = self.client.get("/api/v1/reviews/").json()
-        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["count"], Review.objects.filter(is_published=True).count())
         self.assertNotIn(review.author, [r["author"] for r in data["results"]])
         self.assertNotIn("source_key", data["results"][0])
         self.assertEqual(self.client.post("/api/v1/reviews/", {}).status_code, 405)

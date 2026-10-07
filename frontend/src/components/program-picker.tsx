@@ -9,6 +9,7 @@ const groups = [["animation", "Анимация"], ["transformer", "Больши
 export function ProgramPicker({ offerings, value, onChange, label }: { offerings: Offering[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId(), trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false), [active, setActive] = useState(0);
+  const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const sections = groups.map(([kind, title]) => ({ title, items: offerings.filter(item => item.kind === kind) })).filter(group => group.items.length);
   const options = [{ slug: "", name: "Помогите выбрать" }, ...sections.flatMap(group => group.items)];
   const current = Math.max(0, options.findIndex(option => option.slug === value));
@@ -19,16 +20,16 @@ export function ProgramPicker({ offerings, value, onChange, label }: { offerings
   }, [open, activeIndex, id]);
   function option(slug: string, name: string) {
     const index = options.findIndex(item => item.slug === slug);
-    return <div key={slug} id={`${id}-option-${index}`} role="option" aria-selected={value === slug} className={`${styles.option} ${activeIndex === index ? styles.active : ""}`} onMouseDown={event => event.preventDefault()} onClick={() => pick(slug)}><span>{name}</span>{value === slug && <Check size={18} aria-hidden="true" />}</div>;
+    return <div key={slug} id={`${id}-option-${index}`} role="option" aria-selected={value === slug} className={`${styles.option} ${keyboardNavigation && activeIndex === index ? styles.active : ""}`} onMouseDown={event => event.preventDefault()} onClick={() => pick(slug)}><span>{name}</span>{value === slug && <Check size={18} aria-hidden="true" />}</div>;
   }
   return <div className={styles.picker} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
     <label id={`${id}-label`} htmlFor={`${id}-trigger`}>{label}</label>
     <input type="hidden" name="offering" value={value} />
     <button ref={trigger} id={`${id}-trigger`} type="button" role="combobox" aria-labelledby={`${id}-label ${id}-value`} aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined} className={styles.trigger}
-      onClick={() => { setActive(current); setOpen(state => !state); }}
+      onClick={() => { setKeyboardNavigation(false); setActive(current); setOpen(state => !state); }}
       onKeyDown={event => {
         if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-          event.preventDefault(); setOpen(true);
+          event.preventDefault(); setKeyboardNavigation(true); setOpen(true);
           setActive(index => event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : !open ? current : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length);
         } else if (open && ["Enter", " "].includes(event.key)) { event.preventDefault(); pick(options[activeIndex].slug); }
         else if (open && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setOpen(false); }
