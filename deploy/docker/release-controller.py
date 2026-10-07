@@ -55,11 +55,15 @@ def write_images(images):
     atomic(ROOT/'.env', text)
 
 def ready():
+    settings = dict(line.split('=', 1) for line in (ROOT/'.env').read_text().splitlines() if '=' in line)
+    host = settings.get('SITE_HOST', '')
+    if host not in ('mu56.ru', 'dev.mu56.ru'):
+        raise ValueError('Unexpected site host')
     for _ in range(60):
         try:
             for path in ('/', '/api/v1/offerings/'):
                 req = urllib.request.Request('http://127.0.0.1:18080'+path,
-                                              headers={'Host': 'dev.mu56.ru'})
+                                              headers={'Host': host})
                 with urllib.request.urlopen(req, timeout=5) as response:
                     if response.status != 200 or not response.read(512):
                         raise ValueError('Empty response')
