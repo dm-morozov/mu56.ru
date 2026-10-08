@@ -14,10 +14,11 @@ import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/
 import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
 import { track, priceBand } from "@/lib/analytics";
 import { FormJourney } from "@/lib/form-journey";
+import { createSubmissionKey } from "@/lib/submission-key";
+import { bookingQuoteTotal, requestBookingQuote, type BookingQuote } from "@/lib/booking-quote";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
-type Quote = { amount_rub: number; lines: {slug: string; name: string; amount_rub: number}[] };
 const eveningSlots: Record<string, string> = {"eve-18":"31 декабря · 18:00", "eve-20":"31 декабря · 20:00", "eve-22":"31 декабря · 22:00", "night-00":"1 января · 00:00", "night-02":"1 января · 02:00"};
 const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
@@ -35,6 +36,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const offerings = useMemo(() => bookingOfferings(catalog), [catalog]);
   const ref = useRef<HTMLDialogElement>(null);
   const journey = useRef<FormJourney | null>(null);
+  const submissionKey = useRef<string | null>(null);
   if (!journey.current) journey.current = new FormJourney(track);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
@@ -47,7 +49,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const [secondPerformer, setSecondPerformer] = useState(false);
   const [secondHeroSlug, setSecondHeroSlug] = useState("");
   const [addons, setAddons] = useState<string[]>([]);
-  const [quote, setQuote] = useState<Quote | null>(null), [quoteError, setQuoteError] = useState("");
+  const [quote, setQuote] = useState<BookingQuote | null>(null), [quoteError, setQuoteError] = useState("");
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const program = offerings.find(item => item.slug === programSlug);
   const availableHeroes = program ? program.characters.filter(ordinaryHero) : [...new Map(offerings.flatMap(item => item.characters).filter(ordinaryHero).map(hero => [hero.slug, hero])).values()];
@@ -63,6 +65,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const extraAmount = selectedExtras.reduce((sum, item) => sum + (basePrice(item) ?? 0), 0);
   const extrasKnown = selectedExtras.every(item => basePrice(item) !== undefined);
   const photographer = selectedExtras.find(item => item.slug === "photographer");
+  const compositionTotal = bookingQuoteTotal(quote, photographer ? basePrice(photographer) : 0);
   const simpleBase = packaged ? packageAmount : program?.kind === "seasonal" ? program.prices.find(price => price.code === tariffCode)?.amount_rub : program ? basePrice(program) : undefined;
   const seasonalShows = program?.kind === "seasonal" ? offerings.filter(item => item.kind === "show" && addons.includes(item.slug)) : [];
   const seasonalShowAmount = seasonalShows.reduce((sum, show) => sum + (twoPerformerShowPrice(show) ?? 0), 0);
@@ -79,12 +82,13 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
   useEffect(() => {
+    if (selection.open) submissionKey.current = null;
     if (selection.open) journey.current?.open({ program: selection.offering || "unknown", hero: selection.character || "unknown", details: !!(selection.offering || selection.character || selection.tariff || selection.addons?.length) });
     else journey.current?.close("close");
   }, [selection.open]);
   useEffect(() => {
-    journey.current?.update({ program: programSlug || "unknown", hero: heroSlug || "unknown", kind: program?.kind || "unknown", addon_count: addons.length, price_band: priceBand(pricedComposition ? quote ? quote.amount_rub + extraAmount : undefined : simpleTotal) });
-  }, [programSlug, heroSlug, program?.kind, addons.length, quote, extraAmount, pricedComposition, simpleTotal]);
+    journey.current?.update({ program: programSlug || "unknown", hero: heroSlug || "unknown", kind: program?.kind || "unknown", addon_count: addons.length, price_band: priceBand(pricedComposition ? compositionTotal : simpleTotal) });
+  }, [programSlug, heroSlug, program?.kind, addons.length, compositionTotal, pricedComposition, simpleTotal]);
   useEffect(() => {
     const hide = () => journey.current?.close("pagehide");
     const show = () => { if (ref.current?.open) journey.current?.resume(); };
@@ -108,8 +112,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     if (!selection.open || !pricedComposition) return;
     const controller = new AbortController();
     const params = new URLSearchParams({ offering: programSlug, addons: addons.filter(slug => slug !== "photographer").join(",") });
-    fetch(`/api/v1/${animation ? "animation" : "transformer"}-quote/?${params}`, {cache:"no-store", signal:controller.signal})
-      .then(async response => { const data = await response.json().catch(() => { throw new Error("Не удалось рассчитать стоимость. Попробуйте выбрать программу ещё раз или позвоните нам."); }); if (!response.ok) throw new Error(data.detail || "Не удалось рассчитать стоимость."); return data as Quote; })
+    requestBookingQuote(`/api/v1/${animation ? "animation" : "transformer"}-quote/?${params}`, controller.signal)
       .then(data => { if (!controller.signal.aborted) setQuote(data); })
       .catch(err => { if (!controller.signal.aborted) setQuoteError(err instanceof Error ? err.message : "Не удалось рассчитать стоимость."); });
     return () => controller.abort();
@@ -147,7 +150,8 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         data_consent: data.get("data_consent") === "on", consent_version: consent.version, website: data.get("website") || "",
       };
       requestSent = true;
-      const response = await fetch("/api/v1/leads/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token }, body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
+      submissionKey.current ??= createSubmissionKey();
+      const response = await fetch("/api/v1/leads/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token, "Idempotency-Key": submissionKey.current }, body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
       if (!response.ok) {
         failureStatus = response.status; failureReason = response.status === 429 ? "rate_limit" : response.status >= 500 ? "server" : "validation";
         const result = await response.json().catch(() => ({}));
@@ -160,7 +164,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
       const connectionError = err instanceof Error && ["TypeError", "AbortError", "TimeoutError", "SyntaxError"].includes(err.name);
       setError(connectionError
         ? requestSent
-          ? "Не удалось получить подтверждение отправки. Заявка могла сохраниться — позвоните нам, чтобы уточнить, прежде чем отправлять её повторно. Ваши данные остались в форме."
+          ? "Не удалось получить подтверждение. Повторите отправку, не меняя данные и не закрывая форму, или позвоните нам. Повтор той же заявки не создаст новую."
           : "Не удалось связаться с сайтом. Проверьте интернет и попробуйте ещё раз или позвоните нам. Ваши данные остались в форме."
         : err instanceof Error ? err.message : "Не удалось отправить заявку. Ваши данные остались в форме.");
     }
@@ -206,7 +210,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         {program?.kind === "show" && <p className="hero-picker-help">Анимация в этот вариант не входит. Если нужен герой и игры, выберите программу «Аниматор на праздник» и отметьте шоу.</p>}
         {program && <fieldset className="lead-addons"><legend>Дополнения к программе</legend>{selection.soundRequired && <p>Для этого формата праздника комплект звука обязателен и учтён в расчёте.</p>}{offerings.filter(item => addonOnly(item.slug)).map(item => <ShowAddon key={`${programSlug}-${item.slug}`} show={item} checked={item.slug === "sound" && soundIncluded || addons.includes(item.slug)} disabled={item.slug === "sound" && (soundIncluded || selection.soundRequired)} price={item.slug === "sound" && soundIncluded ? "Уже включён в программу" : basePrice(item) === undefined ? "Стоимость согласуем" : `+ ${rubles(basePrice(item)!)}${item.slug === "photographer" && item.duration_minutes ? ` / ${duration(item.duration_minutes)}` : ""}`} onChange={checked => { setQuote(null); setAddons(current => checked ? [...current, item.slug] : current.filter(slug => slug !== item.slug)); }} />)}</fieldset>}
         </div>
-        {pricedComposition && <div className="lead-quote" aria-live="polite" aria-atomic="true">{quote ? <><strong>{extrasKnown ? `Предварительно: ${rubles(quote.amount_rub + (photographer ? basePrice(photographer)! : 0))}` : "Стоимость с фотографом уточним"}</strong><ul>{quote.lines.map(line => {
+        {pricedComposition && <div className="lead-quote" aria-live="polite" aria-atomic="true">{quote ? <><strong>{compositionTotal !== undefined ? `Предварительно: ${rubles(compositionTotal)}` : "Стоимость с фотографом уточним"}</strong><ul>{quote.lines.map(line => {
             const item = offerings.find(offering => offering.slug === line.slug);
             const timedProgram = transformer && item && ["transformer", "show"].includes(item.kind);
             return <li key={line.slug}><span className="lead-quote-copy"><span>{line.name}</span>{line.slug === "sound" && <small>JBL PartyBox 1000 · 1000 Вт · 2 микрофона Shure</small>}{timedProgram && <small>{item.duration_is_approximate ? "≈ " : ""}{duration(item.duration_minutes)} · 2 {item.kind === "transformer" ? "героя" : "аниматора"}</small>}</span><span className="lead-quote-amount">{rubles(line.amount_rub)}</span></li>;

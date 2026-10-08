@@ -13,6 +13,8 @@ class Lead(models.Model):
         CANCELLED = "cancelled", "Закрыта без заказа"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submission_key = models.UUIDField(null=True, unique=True, editable=False)
+    submission_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
     created_at = models.DateTimeField("Получена", auto_now_add=True)
     name = models.CharField("Имя клиента", max_length=100, blank=True)
     phone = models.CharField("Телефон", max_length=20)
