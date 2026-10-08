@@ -21,6 +21,9 @@ export default function ContactsPage() {
           <h2 className="contact-social-title">Больше наших праздников</h2>
           <div className="contact-channels">{socialProfiles.map(item => <a key={item.name} className="text-link" href={item.href} target="_blank" rel="noopener noreferrer">{item.name} ↗</a>)}</div>
           <p className="contact-travel">Работаем на выезде: дома, в кафе, детском саду, школе или на улице. Условия площадки и стоимость дороги для удалённых районов согласуем отдельно.</p>
+          <h2 className="contact-social-title">Площадка нашего партнёра</h2>
+          <p>Проводим праздники и в Кондитерском доме «Винни-Пух»: Оренбург, ул. Ульянова, 81. Дату, программу и условия проведения на этой площадке согласуем заранее.</p>
+          <a className="text-link" href="https://yandex.ru/maps/org/mir_ulybok/170646325221/" target="_blank" rel="noopener noreferrer">Посмотреть на карте ↗</a>
         </div>
         <div className="contact-introduction">
           <span className="eyebrow">Давайте знакомиться</span>

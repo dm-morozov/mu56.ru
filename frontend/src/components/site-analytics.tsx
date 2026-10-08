@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ANALYTICS_CHOICE, METRIKA_ID, safePath, track } from "@/lib/analytics";
+import { ANALYTICS_CHOICE, METRIKA_ID, contactChannel, safePath, track } from "@/lib/analytics";
 import { useSelection } from "./store-provider";
 
 function choice() { try { return localStorage.getItem(ANALYTICS_CHOICE); } catch { return null; } }
@@ -100,11 +100,7 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
       if (media) track("media_interact", { media: media.dataset.analyticsMedia || "gallery", action: media.dataset.analyticsAction || "open" });
       const link = target?.closest<HTMLAnchorElement>("a[href]");
       if (!link) return;
-      let channel = "";
-      try {
-        const url = new URL(link.href);
-        channel = url.protocol === "tel:" ? "phone" : ({"t.me":"telegram", "max.ru":"max", "vk.com":"vk", "vk.ru":"vk", "www.vk.com":"vk", "www.vk.ru":"vk", "www.avito.ru":"avito", "avito.ru":"avito", "www.instagram.com":"instagram", "instagram.com":"instagram"} as Record<string, string>)[url.hostname] || "";
-      } catch { return; }
+      const channel = contactChannel(link.href);
       if (channel) track("contact_click", { channel });
     }
     function video(event: Event) { if (event.target instanceof HTMLVideoElement) track("media_interact", { media: "video", action: event.type === "ended" ? "complete" : "play" }); }

@@ -19,7 +19,7 @@ declare global { interface Window { ym?: Ym; mu56AnalyticsReady?: boolean } }
 const enums: Record<string, readonly string[]> = {
   field: ["name", "phone", "contact_method", "event_date", "event_time", "offering", "hero", "second_hero", "second_performer", "comment", "data_consent", "details", "addons", "tariff", "unknown"],
   reason: ["close", "pagehide", "network", "timeout", "csrf", "rate_limit", "server", "validation", "unknown"],
-  channel: ["phone", "telegram", "max", "vk", "avito", "instagram", "other"],
+  channel: ["phone", "telegram", "max", "vk", "avito", "instagram", "maps", "other"],
   action: ["open", "play", "complete", "next", "previous", "filter", "sort", "select", "change"],
   kind: ["animation", "transformer", "package", "show", "extra", "seasonal", "unknown"],
   sort: ["category", "popular", "name"],
@@ -28,6 +28,15 @@ const enums: Record<string, readonly string[]> = {
 export function safePath(path: string): string | null {
   const clean = path.split(/[?#]/)[0].replace(/\/$/, "") || "/";
   return /^(\/|\/(animators|transformers|packages|characters|shows|extras|new-year|gallery|contacts|reviews|articles|holidays)(\/[a-z-]{1,70})?)$/.test(clean) ? clean : null;
+}
+export function contactChannel(href: string): string {
+  try {
+    const url = new URL(href);
+    if (url.protocol === "tel:") return "phone";
+    if (!["https:", "http:"].includes(url.protocol)) return "";
+    if (url.hostname === "yandex.ru" && /^\/maps\/org\//.test(url.pathname)) return "maps";
+    return ({ "t.me": "telegram", "max.ru": "max", "vk.com": "vk", "vk.ru": "vk", "www.vk.com": "vk", "www.vk.ru": "vk", "www.avito.ru": "avito", "avito.ru": "avito", "www.instagram.com": "instagram", "instagram.com": "instagram" } as Record<string, string>)[url.hostname] || "";
+  } catch { return ""; }
 }
 export function safeParams(params: AnalyticsParams): AnalyticsParams {
   const safe: AnalyticsParams = {};

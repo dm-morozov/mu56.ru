@@ -1,0 +1,6 @@
+.program-questions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:60px;padding-block:24px 64px}
+.program-questions h2{font-size:30px}
+.program-questions .faq-list summary{line-height:1.6}
+.program-questions .faq-list summary>span{flex-shrink:0}
+.program-questions-links{display:flex;flex-wrap:wrap;gap:18px;padding-top:24px}
+@media(max-width:600px){.program-questions{grid-template-columns:1fr;gap:24px;padding-block:20px 44px}.program-questions h2{font-size:26px}}
