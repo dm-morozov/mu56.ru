@@ -1,4 +1,6 @@
 "use client";
+import "./photo-gallery.css";
+
 
 import { track } from "@/lib/analytics";
 import Image from "next/image";

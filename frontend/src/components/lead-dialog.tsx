@@ -1,4 +1,6 @@
 "use client";
+import "./lead-dialog.css";
+
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Phone, X } from "lucide-react";

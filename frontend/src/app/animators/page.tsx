@@ -1,3 +1,4 @@
+import "./animators.css";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import Image from "next/image";
 import Link from "next/link";

@@ -1,3 +1,4 @@
+import "./interior.css";
 import Link from "next/link";
 import { absoluteUrl } from "@/lib/seo";
 import { StructuredData } from "./structured-data";

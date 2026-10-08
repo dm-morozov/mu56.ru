@@ -1,3 +1,4 @@
+import "./extras.css";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Camera, Candy, Check, Sparkles } from "lucide-react";
