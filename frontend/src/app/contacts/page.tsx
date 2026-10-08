@@ -17,6 +17,7 @@ export default function ContactsPage() {
               <a className="contact-number" href="tel:+79033922229">+7 903 392-22-29</a>
             </div>
           </div>
+          <p><strong>На связи ежедневно, 10:00–20:00.</strong><br />Время по Оренбургу, без выходных.</p>
           <div className="contact-channels">{messengers.map(item => <a key={item.name} className="button outline" href={item.href} target="_blank" rel="noopener noreferrer">Написать в {item.name} ↗</a>)}</div>
           <h2 className="contact-social-title">Больше наших праздников</h2>
           <div className="contact-channels">{socialProfiles.map(item => <a key={item.name} className="text-link" href={item.href} target="_blank" rel="noopener noreferrer">{item.name} ↗</a>)}</div>
