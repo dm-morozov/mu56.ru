@@ -45,13 +45,17 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
       const viewportTop = viewport?.offsetTop || 0;
       const viewportBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
       const bounds = dialog.getBoundingClientRect();
-      const visibleTop = Math.max(bounds.top + dialog.clientTop, viewportTop) + 12;
-      dialog.scrollTop += picker.getBoundingClientRect().top - visibleTop;
-      const visibleBottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, viewportBottom) - 12;
+      const clientTop = dialog.clientTop;
+      const clientHeight = dialog.clientHeight;
+      const visibleTop = Math.max(bounds.top + clientTop, viewportTop) + 12;
+      const visibleBottom = Math.min(bounds.top + clientTop + clientHeight, viewportBottom) - 12;
+      const previousScroll = dialog.scrollTop;
+      const nextScroll = Math.max(0, Math.min(dialog.scrollHeight - clientHeight, previousScroll + picker.getBoundingClientRect().top - visibleTop));
       const list = picker.querySelector<HTMLElement>(".hero-picker-list");
+      const available = list ? visibleBottom - (list.getBoundingClientRect().top - (nextScroll - previousScroll)) - status.getBoundingClientRect().height : 0;
+      // Read geometry before changing scroll or styles to avoid another layout.
+      dialog.scrollTop = nextScroll;
       if (list) {
-        const statusHeight = status.getBoundingClientRect().height;
-        const available = visibleBottom - list.getBoundingClientRect().top - statusHeight;
         picker.style.setProperty("--hero-list-height", `${Math.max(44, Math.min(264, available))}px`);
       }
     }

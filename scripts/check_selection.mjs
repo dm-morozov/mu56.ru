@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { initialSelection, selectionReducer, choose, close } from '../frontend/src/lib/selection.ts';
+
+const requestedAddons = ['sound', 'photographer', 'sound'];
+const picked = selectionReducer(initialSelection, choose({ offering: 'animation', character: 'spider-man', tariff: 'hour', addons: requestedAddons, soundRequired: true }));
+assert.equal(picked.open, true);
+assert.equal(picked.offering, 'animation');
+assert.equal(picked.character, 'spider-man');
+assert.equal(picked.tariff, 'hour');
+assert.equal(picked.soundRequired, true);
+assert.deepEqual(picked.addons, ['sound', 'photographer']);
+assert.deepEqual(requestedAddons, ['sound', 'photographer', 'sound']);
+assert.equal(initialSelection.open, false);
+const closed = selectionReducer(picked, close());
+assert.equal(closed.open, false);
+assert.equal(closed.character, 'spider-man');
+assert.equal(picked.open, true);
+const reopened = selectionReducer(closed, choose({ offering: 'full-party' }));
+assert.equal(reopened.open, true);
+assert.equal(reopened.offering, 'full-party');
+assert.equal(reopened.character, '');
+assert.equal(reopened.tariff, '');
+assert.equal(reopened.soundRequired, false);
+assert.deepEqual(reopened.addons, []);
+assert.deepEqual(selectionReducer(reopened, choose({ soundRequired: true })).addons, ['sound']);
+assert.equal(selectionReducer(initialSelection, close()), initialSelection);
+console.log('Selection: choices, sound requirement, close/reopen, reset and immutable inputs passed');

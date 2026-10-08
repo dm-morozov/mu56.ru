@@ -1,30 +1,21 @@
 "use client";
-import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Provider, useDispatch, useSelector } from "react-redux";
-import { useRef } from "react";
+import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from "react";
+import { initialSelection, selectionReducer, type Selection, type SelectionAction } from "@/lib/selection";
 
-const selection = createSlice({
-  name: "selection",
-  initialState: { open: false, offering: "", character: "", tariff: "", addons: [] as string[], soundRequired: false },
-  reducers: {
-    choose: (state, action: PayloadAction<{ offering?: string; character?: string; tariff?: string; addons?: string[]; soundRequired?: boolean }>) => {
-      state.open = true;
-      state.offering = action.payload.offering || "";
-      state.character = action.payload.character || "";
-      state.tariff = action.payload.tariff || "";
-      state.soundRequired = !!action.payload.soundRequired;
-      state.addons = [...new Set([...(action.payload.addons || []), ...(state.soundRequired ? ["sound"] : [])])];
-    },
-    close: state => { state.open = false; },
-  },
-});
-export const { choose, close } = selection.actions;
-const makeStore = () => configureStore({ reducer: { selection: selection.reducer } });
-type Store = ReturnType<typeof makeStore>;
-export const useSelection = () => useSelector((state: ReturnType<Store["getState"]>) => state.selection);
-export const useAppDispatch = () => useDispatch<Store["dispatch"]>();
-export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const store = useRef<Store | null>(null);
-  if (!store.current) store.current = makeStore();
-  return <Provider store={store.current}>{children}</Provider>;
+export { choose, close } from "@/lib/selection";
+const SelectionContext = createContext<Selection | null>(null);
+const DispatchContext = createContext<Dispatch<SelectionAction> | null>(null);
+export function useSelection() {
+  const selection = useContext(SelectionContext);
+  if (!selection) throw new Error("Selection must be used inside StoreProvider");
+  return selection;
+}
+export function useAppDispatch() {
+  const dispatch = useContext(DispatchContext);
+  if (!dispatch) throw new Error("Dispatch must be used inside StoreProvider");
+  return dispatch;
+}
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [selection, dispatch] = useReducer(selectionReducer, initialSelection);
+  return <DispatchContext value={dispatch}><SelectionContext value={selection}>{children}</SelectionContext></DispatchContext>;
 }
