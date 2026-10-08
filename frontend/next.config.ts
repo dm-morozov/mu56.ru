@@ -10,6 +10,11 @@ const config: NextConfig = {
     localPatterns: [{ pathname: "/media/**", search: "" }, { pathname: "/uploads/**", search: "" }, { pathname: "/_next/static/media/**", search: "" }],
   },
   skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [
+      { source: "/assets/booklet.C-BOrEyY.pdf", destination: "/packages", permanent: true },
+    ];
+  },
   async rewrites() {
     const origin = process.env.BACKEND_ORIGIN || "http://127.0.0.1:8000";
     return [
