@@ -9,7 +9,7 @@ export function crawlerRules(enabled: boolean) {
 }
 export const absoluteUrl = (path: string) => new URL(path, `${siteOrigin}/`).href;
 export const socialPreviewImage: { url: string; alt: string; width?: number; height?: number; type?: string } = {
-  url: absoluteUrl("/media/social-preview-20261008-v2.jpg"),
+  url: absoluteUrl("/media/social-preview-20261008-v5.jpg"),
   width: 1200,
   height: 630,
   type: "image/jpeg",

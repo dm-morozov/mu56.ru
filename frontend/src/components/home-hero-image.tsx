@@ -2,6 +2,8 @@ import Image from "next/image";
 import hero750 from "../../public/media/bumblebee-children-party-750.avif";
 import hero1080 from "../../public/media/bumblebee-children-party-1080.avif";
 import hero1437 from "../../public/media/bumblebee-children-party-1437.avif";
+import mobile750 from "../../public/media/bumblebee-children-party-mobile-750.avif";
+import mobile1080 from "../../public/media/bumblebee-children-party-mobile-1080.avif";
 
 // Keep enough pixels for the tall object-fit:cover crop on narrow phones.
 // Desktop sizes follow the hero's two columns and the 1240px container cap.
@@ -9,6 +11,12 @@ const sizes = "(max-width: 600px) 100vw, (max-width: 1100px) calc(50vw - 40px), 
 
 export function HomeHeroImage() {
   return <picture>
+    <source
+      media="(max-width: 600px)"
+      type="image/avif"
+      sizes={sizes}
+      srcSet={`${mobile750.src} 750w, ${mobile1080.src} 1080w, ${hero1437.src} 1437w`}
+    />
     <source
       type="image/avif"
       sizes={sizes}

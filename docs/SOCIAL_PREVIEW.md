@@ -2,6 +2,22 @@
 
 ## Обложка
 
+**Текущая локальная версия v5:** `frontend/public/media/social-preview-20261008-v5.jpg`, JPEG 1200 × 630. По прямой просьбе владельца вставить исходную иконку использовано оригинальное изображение `logo.png`: змей и фирменная надпись вместе, без генерации и перерисовки. Оригинал пропорционально уменьшен с 490 × 140 до 300 × 86. Локальная вставка выполнена System.Drawing, воспроизводимый экспорт — `scripts/export_social_preview_logo.ps1`. База — одобренная v3; заменена только область логотипа, затем JPEG экспортирован с качеством 95. Визуально проверены исходная форма змея, надпись и отсутствие остатка сгенерированного логотипа. Общий объект метаданных локально переключён на v5, старые версии сохранены. Сервер, commit/push/deploy не затрагивались.
+
+**Локальная версия v4:** `frontend/public/media/social-preview-20261008-v4.jpg`, JPEG 1200 × 630. Уточнён логотип через встроенный imagegen с двумя входами: обложка v3 и оригинальный `logo.png`. Генератор приблизил логотип к исходному, но результат не является гарантированно точной вставкой пикселей оригинала. Для строгой идентичности потребуется обычная графическая вставка оригинального файла. Код локально указывает на v4; публикация не выполнялась. Промпт:
+
+```text
+Precise localized edit. Input 1 is approved banner EDIT TARGET. Input 2 is the ORIGINAL OFFICIAL LOGO, an exact artwork insert, NOT style inspiration. Replace ONLY the upper-left generated distorted logo in input 1 with original logo artwork from input 2. Preserve the original logo's exact 490:140 aspect ratio, the original relative positions of kite, ribbon, lettering, whitespace between MIR and ULYBOK, letterforms and colors. Do not redesign, reinterpret, redraw or restyle the logo. It must look like input 2 uniformly scaled down as a single intact image, approximately 300px wide at 1200px banner width, positioned x48 y60. Use transparency of logo over existing ivory background. Remove old generated logo completely. Do NOT alter any other pixels, main headline lettering, layout, photograph, people, expressions, photo framing, border, background, supporting text, footer. Headline remains exactly 'Праздник, который дети не забудут'. Output same 1200:630 landscape banner with corrected official logo only.
+```
+
+**Новая локальная версия v3 — 8 октября 2026:** `frontend/public/media/social-preview-20261008-v3.jpg`, JPEG 1200 × 630. По просьбе владельца облегчён шрифт заголовка, увеличены свободные промежутки, убраны крупное оранжевое выделение, декоративные волны, цветные пятна и значок геолокации. Фотография с мягким светом и фирменный логотип использованы как основа. Проверены текст и композиция. Общий `socialPreviewImage` локально переключён на v3; старые файлы сохранены. Публикация не выполнялась. Новый URL изображения не гарантирует обновления кэша исходного URL страницы в Telegram.
+
+Создано встроенным imagegen, затем экспортировано в JPEG целевого размера. Финальный промпт v3:
+
+```text
+Edit target: input 1 existing social preview for Мир Улыбок. Redesign its graphic typography and layout to be calm, sophisticated, airy modern editorial design rather than oversized bold advertising. Keep EXACT same real photo on right with same people faces and soft lighting, do not redraw or change people, preserve exact brand kite logo and Cyrillic brand name. Landscape 1200:630 ratio. Warm ivory left panel about 48%, documentary photo right 52%, gently rounded boundary with very thin restrained warm yellow accent, no thick yellow swoosh. Brand logo small upper left, about 210px wide in 1200px canvas. Generous whitespace 55px left and substantial space between logo, headline and supporting text. Headline verbatim 'Праздник, который дети не забудут' in refined clean contemporary sans serif, MEDIUM weight not black/bold, approximately 43px at 1200px, arranged across three balanced lines: 'Праздник,' / 'который дети' / 'не забудут'. Navy text throughout, no oversized orange words. Headline should occupy less than half left panel height, leave abundant breathing room. Supporting line smaller regular weight 'Аниматоры · Трансформеры · Шоу', around 18px. Bottom quiet small 'Оренбург' and 'mu56.ru', without location pin. Remove decorative wave, bottom color blobs and duplicate kite flourish. Restrained tiny orange accent optional only. Professional warm family celebration brand, elegant understated confidence, readable small preview, not luxury gold or corporate sterile. Preserve all text accurately and photo naturalness. Finished banner only, no mockup.
+```
+
 **Актуальная версия после уточнения владельца:** `frontend/public/media/social-preview-20261008-v2.jpg`, JPEG 1200 × 630 px, 232 733 байта. Справа использована обработанная фотография с главной `bumblebee-children-party.png` с мягким освещением лиц. Текст и фирменная композиция сохранены. Версия ниже — первоначальная, сохранена для истории. Код подключает v2; локальный GET файла вернул 200/image/jpeg, OG и Twitter указывают на v2. Production не обновлялся.
 
 Файл: `frontend/public/media/social-preview-20261008.jpg`, JPEG, 1200 × 630 px, 241 597 байт. Создан встроенным imagegen с опорой на `bumblebee-live.jpg` и `logo.png`; экспортирован в целевой размер JPEG. Исходные фотографии/логотип не изменены. Обложка — дизайнерская композиция, а не новый неизменённый документальный кадр.
@@ -9,6 +25,28 @@
 Крупный текст: «Праздник, который дети не забудут». Дополнительно: «Аниматоры · Трансформеры · Шоу», «Оренбург», `mu56.ru`. Нет изменяемых цен и неподтверждённых заявлений.
 
 ## Подключение
+
+### Готово к выпуску: утверждённая обложка v5
+
+Владелец утвердил v5 для Telegram, WhatsApp и других мессенджеров. Общие Open Graph (`og:image`, размеры, MIME, alt) и Twitter Card (`summary_large_image`) берут файл из `socialPreviewImage`; отдельные интеграции с мессенджерами не нужны. На страницах конкретных персонажей и отдельных услуг сохранены собственные фотографии, общая обложка используется по умолчанию.
+
+Для технического чата: включить в штатный выпуск `frontend/public/media/social-preview-20261008-v5.jpg` и изменение URL в `frontend/src/lib/seo.ts`. Воспроизводимый экспорт — `scripts/export_social_preview_logo.ps1`. Черновые v3/v4 для работы сайта не требуются. Не добавлять в выпуск чужие незавершённые изменения автоматически. TypeScript проверен успешно. GET локального сайта 3001 сейчас невозможен: соединение отклонено; сервер не запускался и не перезапускался. После публикации проверить публичный GET главной (OG/Twitter указывают на v5), GET JPEG 200/image/jpeg и новое превью в Telegram/WhatsApp. Фактическое обновление мессенджеров не подтверждено. Для контроля Telegram использовать новый URL страницы, поскольку исходный `/` ранее сохранял старое превью.
+
+### Повторная диагностика после неудачного WebpageBot — 8 октября 2026, 05:50–05:52 UTC
+
+Владелец подтвердил обновление MAX; в Telegram после WebpageBot остаются старые новогодние заголовок, описание и картинка. Проверены все шесть авторитетных NS Beget: A = `161.104.32.37`, AAAA отсутствует; Google DNS даёт тот же результат. Локальный DNS возвращает `198.18.0.8`, поэтому его ответ не использовался как публичный адрес сайта.
+
+GET с VPS главной от имени TelegramBot возвращает HTTP 200 и актуальные `og:title`/`og:image`. TLS: Let's Encrypt, verification OK. JPEG возвращает 200/image/jpeg, 232 733 байта. Свежих ошибок в nginx/error.log при проверке нет. `https://mu56.ru/?preview=20261008-v2` возвращает 200 без перенаправления; владельцу предложено проверить её превью в Telegram как контроль нового URL. Результат ожидается. Успешный curl с подставленным User-Agent не доказывает доступность с инфраструктуры Telegram.
+
+Публичные DNS и текущая выдача сайта согласованы. Сохранённое превью/маршрутизация внутри Telegram остаются вероятной причиной; точную причину без контрольного результата и журналов самого Telegram установить нельзя. Сервер, DNS, код, Git и публикация не менялись. Никакие сообщения через Telegram от имени владельца не отправлялись.
+
+**Результат контрольной проверки:** владелец подтвердил, что `https://mu56.ru/?preview=20261008-v2` показывает новую обложку в Telegram. Это подтверждает работоспособность текущей страницы и изображения для Telegram на новом URL. Неисправное состояние связано с исходным URL `/`; точный внутренний механизм кэша Telegram неизвестен. Контрольную ссылку можно временно использовать для отправки сайта: она открывает ту же главную, canonical остаётся исходным. Обновление карточки исходного URL не подтверждено; обещать срок обновления нельзя.
+
+### Проверка после публикации — 8 октября 2026
+
+Публичный GET `https://mu56.ru/` с User-Agent `TelegramBot (like TwitterBot)` возвращает OG/Twitter с актуальным `/media/social-preview-20261008-v2.jpg`, image/jpeg, 1200 × 630. GET JPEG — 200, 232 733 байта. `robots.txt` разрешает обход главной и media. `https://www.mu56.ru/` приводит к основному HTTPS-домену. Следовательно, локальное подключение уже опубликовано; прежние отметки «production не обновлялся» ниже относятся к этапу подготовки.
+
+Read-only SSH-проверка журналов: запросы с User-Agent TelegramBot есть на HTTP-входе с ответом 308 на HTTPS. Формат HTTPS access-log не содержит User-Agent, поэтому успешный обход и загрузку JPEG именно Telegram по нему установить нельзя. Несколько GET нового JPEG с ответом 200 подтверждены, принадлежность внешнего клиента не приписывалась Telegram. Дефект метаданных/недоступность обложки в данном проходе не обнаружены. Кэш или внутренняя обработка Telegram — гипотеза, не доказанный диагноз. Следующий шаг: вручную обновить URL через @WebpageBot и проверить новое сообщение с полной HTTPS-ссылкой. Сообщения ботам/контактам не отправлялись, серверная конфигурация не менялась.
 
 Общий объект `socialPreviewImage` в `frontend/src/lib/seo.ts`: абсолютный URL через действующий SITE_URL, размеры, MIME, alt. Используется в корневых Open Graph/Twitter Card и как обложка по умолчанию в `pageMetadata`. Собственные Open Graph фотографии персонажей и отдельных услуг сохраняются. Аналитика, индексация, canonical, заголовки, сервер и заявки не менялись.
 
