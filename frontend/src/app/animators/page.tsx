@@ -11,6 +11,7 @@ import { CharacterCard, PackageCard } from "@/components/cards";
 import { ChooseButton } from "@/components/choose-button";
 import { CharacterGallery } from "@/components/character-gallery";
 import { StructuredData } from "@/components/structured-data";
+import { AnimationPlanning } from "@/components/animation-planning";
 
 const description = "Выездные аниматоры на день рождения и детский праздник в Оренбурге. Любимые персонажи, игры по возрасту, реальные фотографии и пакеты с шоу. Оплата после праздника.";
 export const metadata = {
@@ -65,12 +66,13 @@ export default async function AnimatorsPage() {
       <Link href="/packages#compare" className="text-link">Сравнить все пакеты →</Link>
     </section></div>
 
+    <AnimationPlanning />
     <CharacterGallery name="Аниматоры" photos={photos} />
     <section className="container animation-questions"><div><span className="eyebrow">Чтобы было спокойно родителям</span><h2>Обсудим детали <em>заранее</em></h2><div className="guarantee-card"><strong>Гарантия хорошего праздника</strong><p>Оплата после праздника.<br />Не понравится — можете не платить.</p></div></div><div className="faq-list">
       <details><summary>Хватит ли места дома?</summary><p>Обычная анимация проходит и в квартире. Заранее обсудим свободное пространство, число детей и игры, которые подойдут вашей площадке. У больших героев отдельные условия — они описаны в разделе трансформеров.</p></details>
       <details><summary>Сколько детей может участвовать?</summary><p>Проводим праздники для небольшой компании и больших групп. Количество ведущих и дополнительный звук подбираем по числу гостей и формату. Для сада, школы или выпускного условия согласуем отдельно.</p></details>
       <details><summary>Можно добавить шоу?</summary><p>Да. Посмотрите готовые пакеты с азотным шоу, серебряным шоу или сладкой ватой. Содержание и итоговую стоимость подтвердим при обсуждении заказа.</p></details>
-      <details><summary>Что входит в цену анимации?</summary><p>В базовой программе — {duration(animation.duration_minutes)}, {animation.included_performers === 1 ? "один аниматор" : `${animation.included_performers} участника команды`} и выбранный доступный герой. Шоу, фотограф и дополнительный звук согласуются отдельно. Выезд в удалённые районы может оплачиваться отдельно — стоимость уточним по адресу до праздника.</p></details>
+      <details><summary>Сколько стоит аниматор и что входит в цену?</summary><p>{price ? `Базовая анимация стоит ${rubles(price)}.` : "Стоимость базовой анимации уточним при обращении."} В программе — {duration(animation.duration_minutes)}, {animation.included_performers === 1 ? "один аниматор" : `${animation.included_performers} участника команды`} и выбранный доступный герой. Шоу, фотограф и дополнительный звук согласуются отдельно. Выезд в удалённые районы может оплачиваться отдельно — стоимость уточним по адресу до праздника.</p></details>
       <details><summary>Как заказать аниматора?</summary><p>Оставьте заявку с датой, возрастом ребёнка, местом проведения и пожеланиями к герою. Уточним свободное время, состав и стоимость выезда. Если ещё не выбрали персонажа, поможем подобрать его. Отправка заявки сама по себе не бронирует дату.</p></details>
       <Link href="/articles/esli-rebenok-stesnyaetsya" className="text-link">Если ребёнок стесняется аниматора →</Link>
     </div></section>

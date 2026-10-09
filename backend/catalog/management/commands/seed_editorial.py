@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from catalog.models import Article, Offering, Review
 from .additional_articles import ARTICLES as ADDITIONAL_ARTICLES
+from .owner_stories import ARTICLES as OWNER_STORIES
 from .avito_review_content import AVITO_PROFILE, REVIEWS as ADDITIONAL_REVIEWS
 
 AVITO = AVITO_PROFILE
@@ -186,6 +187,7 @@ ARTICLES = [
 
 
 ARTICLES.extend(ADDITIONAL_ARTICLES)
+ARTICLES.extend(OWNER_STORIES)
 
 
 class Command(BaseCommand):

@@ -15,7 +15,7 @@ import { organization, siteOrigin, indexingEnabled, socialPreviewImage } from "@
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: { default: "Мир Улыбок — детские праздники и трансформеры в Оренбурге", template: "%s | Мир Улыбок, Оренбург" },
+  title: { default: "Мир Улыбок — детские праздники и трансформеры в Оренбурге", template: "%s | Мир Улыбок" },
   description: "Выездные детские праздники в Оренбурге: трансформеры, любимые персонажи, шоу и готовые пакеты. Оплата после праздника. Подберём программу для вашего ребёнка.",
   robots: { index: indexingEnabled, follow: indexingEnabled },
   openGraph: { locale: "ru_RU", type: "website", siteName: "Мир Улыбок", images: [socialPreviewImage] },

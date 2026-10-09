@@ -20,7 +20,9 @@ export const characterCanonical = (slug: string) => ["bumblebee", "optimus-prime
 export const shortDescription = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 180);
 export const serializeJsonLd = (data: unknown) => JSON.stringify(data).replace(/</g, "\\u003c");
 export function pageMetadata(title: string, description: string, path: string) {
-  return { title, description: shortDescription(description), alternates: { canonical: path }, openGraph: { title, description: shortDescription(description), url: absoluteUrl(path), type: "website" as const, locale: "ru_RU", siteName: "Мир Улыбок", images: [socialPreviewImage] } };
+  // Most titles already include the city; avoid the root template repeating it.
+  const searchTitle = `${title}${title.includes("Оренбург") ? "" : " в Оренбурге"} | Мир Улыбок`;
+  return { title: { absolute: searchTitle }, description: shortDescription(description), alternates: { canonical: path }, openGraph: { title: searchTitle, description: shortDescription(description), url: absoluteUrl(path), type: "website" as const, locale: "ru_RU", siteName: "Мир Улыбок", images: [socialPreviewImage] } };
 }
 export const organization = {
   "@context": "https://schema.org", "@type": "Organization", "@id": absoluteUrl("/#organization"),

@@ -9,8 +9,9 @@ import { offeringGalleries } from "@/lib/offering-gallery";
 import { PhotoGallery } from "@/components/photo-gallery";
 import { ProgramQuestions } from "@/components/program-questions";
 import { getOccasion } from "@/lib/occasions";
+import { offeringSearchTitle, offeringSearchDescription } from "@/lib/offering-seo";
 const kinds: Record<string, string> = { packages: "package", transformers: "transformer", shows: "show", extras: "extra" };
-export async function generateMetadata({ params }: { params: Promise<{ section: string; slug: string }> }) { const { section, slug } = await params; const item = (await getOfferings()).find(p => p.slug === slug && p.kind === kinds[section]); if (!item) return {title:"Программа не найдена"}; return pageMetadata(item.name, `${item.name} на праздник в Оренбурге. ${item.description || "Выездная программа на вашей площадке. Состав, продолжительность и подтверждённые цены. Оплата после праздника."}`, `/${section}/${slug}`); }
+export async function generateMetadata({ params }: { params: Promise<{ section: string; slug: string }> }) { const { section, slug } = await params; const item = (await getOfferings()).find(p => p.slug === slug && p.kind === kinds[section]); if (!item) return {title:"Программа не найдена"}; return pageMetadata(offeringSearchTitle(item), offeringSearchDescription(item), `/${section}/${slug}`); }
 export default async function DetailPage({ params, searchParams }: { params: Promise<{ section: string; slug: string }>; searchParams: Promise<{ occasion?: string | string[] }> }) {
   const { section, slug } = await params, offerings = await getOfferings();
   const item = offerings.find(p => p.slug === slug && p.kind === kinds[section]); if (!item) notFound();
