@@ -1,0 +1,25 @@
+.reading {
+  border-top: 1px solid var(--line);
+  padding-block: 32px 48px;
+}
+
+.reading h2 {
+  font-size: 24px;
+  margin-block: 12px;
+}
+
+.reading p {
+  max-width: 760px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.reading > div {
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .reading h2 {
+    font-size: 21px;
+  }
+}

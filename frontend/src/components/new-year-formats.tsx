@@ -2,6 +2,7 @@ import type { Offering } from "@/lib/types";
 import { rubles } from "@/lib/types";
 import { ChooseButton } from "./choose-button";
 import { Clock3, UsersRound, AudioLines } from "lucide-react";
+import styles from "./topic-navigation.module.css";
 
 const formats = [
   { code: "minutes-15", title: "Поздравление у ёлки", text: "Встреча, поздравление, стихи по желанию, вручение подарков и фотографии. Без игровой программы." },
@@ -12,20 +13,26 @@ const slots = [["eve-18", "31 декабря · 18:00"], ["eve-20", "31 дека
 
 export function NewYearFormats({ offering }: { offering: Offering }) {
   const group = offering.prices.find(p => p.code === "group-with-sound");
+  const firstDayCode = formats.find(format => offering.prices.some(price => price.code === format.code))?.code;
   return <div className="new-year-formats" id="new-year-formats">
+    <nav className={styles.navigation} aria-label="Новогодние форматы">
+      {firstDayCode && <a href="#new-year-day">Дневные программы</a>}
+      {group && <a href="#new-year-group">Для группы</a>}
+      <a href="#new-year-evening">31 декабря и ночь</a>
+    </nav>
     <p>Два героя вместе в каждой программе. Подарки для вручения заранее передают родители. Базовые цены действуют и 31 декабря при начале до 18:00.</p>
     {formats.map(format => {
       const price = offering.prices.find(p => p.code === format.code);
       if (!price) return null;
       const featured = format.code === "minutes-50";
-      return <article key={format.code} className={`new-year-format ${featured ? "new-year-format-featured" : ""}`}>
+      return <article key={format.code} id={format.code === firstDayCode ? "new-year-day" : undefined} className={`new-year-format ${styles.target} ${featured ? "new-year-format-featured" : ""}`}>
         {featured && <span className="new-year-recommendation">Полная интерактивная сказка</span>}
         <div className="new-year-format-top"><span>{price.duration_minutes} минут · два героя</span><strong>{rubles(price.amount_rub)}</strong></div>
         <h3>{format.title}</h3><p>{format.text}</p>
         <ChooseButton offering="new-year" tariff={price.code} className={featured ? "button orange" : "button outline"}>Выбрать {price.duration_minutes} минут</ChooseButton>
       </article>;
     })}
-    {group && <article className="new-year-group">
+    {group && <article id="new-year-group" className={`new-year-group ${styles.target}`}>
       <div className="new-year-group-copy">
         <span className="eyebrow">Новый год для всей компании</span>
         <h3>Час новогоднего праздника <em>с профессиональным звуком</em></h3>
@@ -46,6 +53,6 @@ export function NewYearFormats({ offering }: { offering: Offering }) {
         </ul>
       </div>
     </article>}
-    <section className="new-year-evening"><span className="eyebrow">Особенные часы</span><h3>31 декабря и новогодняя ночь</h3><p>Только интерактивная сказка на 50 минут. Время начала точное, по Оренбургу. Свободный выезд и маршрут подтвердим лично — это не календарь бронирования.</p><div className="new-year-slots">{slots.map(([code, label]) => { const price = offering.prices.find(p => p.code === code); return price && <div key={code}><span>{label}</span><strong>{rubles(price.amount_rub)}</strong><ChooseButton offering="new-year" tariff={code} className="button outline">Обсудить это время</ChooseButton></div>; })}</div><p>Последнее начало — 1 января в 02:00. Короткие поздравления и программа для групп в эти часы недоступны.</p></section>
+    <section id="new-year-evening" className={`new-year-evening ${styles.target}`}><span className="eyebrow">Особенные часы</span><h3>31 декабря и новогодняя ночь</h3><p>Только интерактивная сказка на 50 минут. Время начала точное, по Оренбургу. Свободный выезд и маршрут подтвердим лично — это не календарь бронирования.</p><div className="new-year-slots">{slots.map(([code, label]) => { const price = offering.prices.find(p => p.code === code); return price && <div key={code}><span>{label}</span><strong>{rubles(price.amount_rub)}</strong><ChooseButton offering="new-year" tariff={code} className="button outline">Обсудить {label.split(" · ")[1]}</ChooseButton></div>; })}</div><p>Последнее начало — 1 января в 02:00. Короткие поздравления и программа для групп в эти часы недоступны.</p></section>
   </div>;
 }

@@ -10,6 +10,7 @@ import { basePrice, rubles } from "@/lib/types";
 import { ChooseButton } from "@/components/choose-button";
 import { OfferingCard, PackageCard } from "@/components/cards";
 import { ExperienceLinks } from "@/components/experience-links";
+import { PreparationReading } from "@/components/program-reading";
 
 type Props = { params: Promise<{ occasion: string }> };
 export async function generateMetadata({ params }: Props) {
@@ -36,5 +37,6 @@ export default async function OccasionPage({ params }: Props) {
     <section className="container occasion-planning"><div><span className="eyebrow">Соберём всё по делу</span><h2>Четыре детали.<br /><em>И уже есть план.</em></h2><p>В заявке можно сразу указать эти сведения. Если пока знаете не всё — поможем определиться.</p><ChooseButton addons={groupAddons} className="button navy">Обсудить мой праздник</ChooseButton></div><ol>{item.planning.map((point, index) => <li key={point}><span>0{index + 1}</span>{point}</li>)}</ol></section>
     <section className="container section faq-section"><div><span className="eyebrow">До встречи с героями</span><h2>Что важно знать заранее</h2><div className="guarantee-card"><ShieldCheck size={27} /><h3>Гарантия хорошего праздника</h3><p>Оплата после праздника.<br />Не понравится — можете не платить.</p></div></div><div className="faq-list">{item.questions.map(([question, answer]) => <details key={question}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}</div></section>
     {largeGroup && <ExperienceLinks />}
+    {(kindergarten || item.slug === "graduation") && <PreparationReading slugs={["vypusknoy-dlya-gruppy", "podgotovka-k-priezdu-animatora", "igry-shou-i-tort"]} />}
   </main>;
 }

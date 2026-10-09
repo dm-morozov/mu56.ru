@@ -1,0 +1,7 @@
+.navigation { display:flex; flex-wrap:wrap; gap:8px 24px; grid-column:1/-1; margin-bottom:12px; }
+.navigation a { color:var(--navy); font-size:14px; line-height:1.6; padding:8px 0; text-decoration:underline; text-decoration-color:var(--line); text-underline-offset:6px; }
+.navigation a:hover { color:var(--orange-ink); }
+.navigation a:focus-visible { outline:2px solid var(--orange-ink); outline-offset:4px; }
+.target { scroll-margin-top:130px; }
+.topic { scroll-margin-top:130px; margin-bottom:56px; }
+.topic h2 { font-size:clamp(24px,3vw,32px); margin:0 0 24px; }

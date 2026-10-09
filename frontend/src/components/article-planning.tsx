@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Article } from "@/lib/editorial";
 import { Character, Offering, basePrice, rubles } from "@/lib/types";
 import { offeringUrl } from "@/lib/images";
+import { relatedArticles } from "@/lib/related-articles";
 
 const suggestions: Record<string, string[]> = {
   "letnie-prazdniki-na-turbaze": ["animation", "foam-party", "nitrogen"],
@@ -22,7 +23,7 @@ const suggestions: Record<string, string[]> = {
 export function ArticlePlanning({ slug, offerings, articles, characters = [] }: { slug: string; offerings: Offering[]; articles: Article[]; characters?: Character[] }) {
   const programs = (suggestions[slug] || []).map(key => offerings.find(item => item.slug === key && item.availability !== "unavailable"))
     .filter((item): item is Offering => !!item);
-  const reading = articles.filter(item => item.slug !== slug).slice(0, 3);
+  const reading = relatedArticles(slug, articles);
   const heroes = slug === "kak-vybrat-geroya" ? characters.filter(item => ["spider-man", "ninja-turtle"].includes(item.slug) && item.availability !== "unavailable") : [];
   return <section className="article-planning" aria-label="Программы и материалы по теме">
     {slug === "prazdniki-v-shkolnyh-lageryah" && <div className="article-character-links"><h2>Обсудим праздник для вашего лагеря</h2><p>Число ведущих, игры и комплект звука подбираем под возраст ребят, количество отрядов и площадку.</p><Link className="text-link" href="/holidays/large-events">Праздники для больших групп в Оренбурге →</Link>{characters.some(item => item.slug === "tiktok" && item.availability !== "unavailable") && <Link className="text-link" href="/characters/tiktok">Ведущие TikTok: образ и фотографии →</Link>}{offerings.some(item => item.slug === "sound" && item.availability !== "unavailable") && <Link className="text-link" href="/extras/sound">Звук и микрофоны для программы →</Link>}</div>}
