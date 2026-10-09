@@ -82,6 +82,39 @@ def switch(images, worker=False):
         if not compose(['ps', '--status', 'running', '-q', 'worker']).strip():
             raise RuntimeError('Notification worker did not start')
 
+def cleanup_images(apply=False):
+    """Caller holds releases/.lock. Preserve both releases and every container."""
+    keep = set()
+    for name in ('current.json', 'previous.json'):
+        state = json.loads((STATE/name).read_text())
+        images = state['images']
+        if set(images) != {'BACKEND_IMAGE', 'FRONTEND_IMAGE'}:
+            raise ValueError('Incomplete release state; cleanup skipped')
+        for reference in images.values():
+            keep.add(json.loads(run(['/usr/bin/docker', 'image', 'inspect', reference]))[0]['Id'])
+    containers = run(['/usr/bin/docker', 'ps', '-aq']).split()
+    if containers:
+        keep.update(item['Image'] for item in json.loads(run(
+            ['/usr/bin/docker', 'inspect', *containers])))
+    ids = sorted(set(run(['/usr/bin/docker', 'image', 'ls', '-aq', '--no-trunc']).split()))
+    allowed = {'ghcr.io/dm-morozov/mu56-backend', 'ghcr.io/dm-morozov/mu56-frontend',
+               'mu56-backend', 'mu56-frontend'}
+    candidates = []
+    for image in json.loads(run(['/usr/bin/docker', 'image', 'inspect', *ids])) if ids else []:
+        references = (image.get('RepoTags') or []) + (image.get('RepoDigests') or [])
+        repositories = {reference.split('@')[0].rsplit(':', 1)[0]
+                        if '@' not in reference else reference.split('@')[0]
+                        for reference in references}
+        if image['Id'] not in keep and repositories and repositories <= allowed:
+            candidates.append(image['Id'])
+    removed = []
+    if apply:
+        for image_id in candidates:
+            # No force, no volume/container removal, no automatic parent pruning.
+            run(['/usr/bin/docker', 'image', 'rm', '--no-prune', image_id])
+            removed.append(image_id)
+    return {'preserved': sorted(keep), 'candidates': candidates, 'removed': removed}
+
 def main():
     if sys.argv[1:] not in (['release'], ['rollback']):
         raise ValueError('Unsupported operation')
@@ -131,6 +164,11 @@ def main():
             raise RuntimeError('Update failed; previous images restored')
         atomic(STATE/'previous.json', json.dumps(old_state))
         atomic(current, json.dumps(new_state))
+        try:
+            cleanup_images(apply=True)
+        except Exception:
+            # Cleanup failure must not turn a healthy release into a failed one.
+            print('Warning: old image cleanup incomplete; inspect storage', file=sys.stderr)
         print(json.dumps({'success': True, 'sha': new_state['sha']}))
 
 if __name__ == '__main__':
