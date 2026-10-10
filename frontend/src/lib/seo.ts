@@ -38,7 +38,7 @@ export function serviceSchema(item: Offering, description: string) {
   };
 }
 export function sitemapEntries(characters: Character[], offerings: Offering[], articles: {slug: string}[]) {
-  const paths = ["/", "/animators", "/transformers", "/packages", "/characters", "/shows", "/extras", "/new-year", "/gallery", "/contacts", "/reviews", "/articles", "/holidays", "/holidays/kindergarten", "/holidays/graduation", "/holidays/large-events", "/venues/vinni-puh",
+  const paths = ["/", "/animators", "/transformers", "/packages", "/characters", "/shows", "/extras", "/new-year", "/gallery", "/contacts", "/reviews", "/articles", "/holidays", "/holidays/kindergarten", "/holidays/graduation", "/holidays/large-events", "/venues", "/venues/vinni-puh",
     ...characters.map(c => characterCanonical(c.slug)), ...offerings.map(o => servicePath(o.kind, o.slug)).filter(Boolean), ...articles.map(a => `/articles/${a.slug}`)];
   return [...new Set(paths)].map(path => ({ url: absoluteUrl(path) }));
 }

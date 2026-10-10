@@ -20,7 +20,7 @@ export default async function VinniPuhPage() {
   const price = animation ? basePrice(animation) : undefined;
 
   return <main id="main">
-    <PageIntro path="/venues/vinni-puh" breadcrumbLabel="Праздники в «Винни-Пухе»" eyebrow="Площадка, где мы проводим праздники" title="Детский праздник в «Винни-Пухе»" description="" />
+    <PageIntro path="/venues/vinni-puh" breadcrumbLabel="Праздники в «Винни-Пухе»" parents={[{ label: "Площадки для праздника", href: "/venues" }]} eyebrow="Площадка, где мы проводим праздники" title="Детский праздник в «Винни-Пухе»" description="" />
     <section className={`container ${styles.hero}`} aria-labelledby="venue-animation">
       <PhotoGallery className={styles.gallery} photos={venuePhotos} layout="carousel" title="Наши праздники в «Винни-Пухе»" description="Игры и встречи с героями на знакомой площадке." />
       <div className={styles.heroCopy}>
