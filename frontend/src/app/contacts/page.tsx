@@ -1,5 +1,6 @@
 import { PageIntro } from "@/components/page-intro";
 import Image from "next/image";
+import Link from "next/link";
 import { ChooseButton } from "@/components/choose-button";
 import { messengers, socialProfiles } from "@/lib/contacts";
 export const metadata = { title: "Контакты", description: "Свяжитесь с «Миром Улыбок» в Оренбурге: телефон, Telegram и MAX. Обсудим дату, выезд, персонажей и программу детского праздника.", alternates: { canonical: "/contacts" } };
@@ -24,6 +25,7 @@ export default function ContactsPage() {
           <p className="contact-travel">Работаем на выезде: дома, в кафе, детском саду, школе или на улице. Условия площадки и стоимость дороги для удалённых районов согласуем отдельно.</p>
           <h2 className="contact-social-title">Площадка нашего партнёра</h2>
           <p>Проводим праздники и в Кондитерском доме «Винни-Пух»: Оренбург, ул. Ульянова, 81. Дату, программу и условия проведения на этой площадке согласуем заранее.</p>
+          <p><Link className="text-link" href="/venues/vinni-puh">Фотографии и программы в «Винни-Пухе» →</Link></p>
           <a className="text-link" href="https://yandex.ru/maps/org/mir_ulybok/170646325221/" target="_blank" rel="noopener noreferrer">Посмотреть на карте ↗</a>
         </div>
         <div className="contact-introduction">
