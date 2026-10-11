@@ -10,7 +10,7 @@ from catalog.models import Availability, Character, Offering, PriceOption
 from catalog.pricing import package_total, transformer_quote, animation_quote, new_year_quote
 from catalog.addons import ADDON_ONLY_SLUGS, addon_error
 from catalog.new_year import schedule_error
-from .models import Lead, TelegramNotification
+from .models import Lead, TelegramNotification, VENUE_CHOICES
 from .selection import character_error
 
 
@@ -26,6 +26,7 @@ def selection_item(offering):
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
+    venue = serializers.ChoiceField(choices=VENUE_CHOICES, required=False, allow_blank=True, write_only=True)
     tariff_code = serializers.CharField(required=False, allow_blank=True, max_length=100, write_only=True)
     offering = serializers.SlugRelatedField(
         slug_field="slug", queryset=Offering.objects.filter(is_listed=True).exclude(availability=Availability.UNAVAILABLE),
@@ -54,7 +55,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         fields = (
             "name", "phone", "contact_method", "messenger_handle", "event_date", "event_time", "child_age",
             "children_count", "location", "comment", "offering", "character", "second_character", "addons", "second_performer",
-            "data_consent", "consent_version", "website", "tariff_code",
+            "data_consent", "consent_version", "website", "tariff_code", "venue",
         )
 
     def to_internal_value(self, data):
@@ -143,6 +144,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         validated_data.pop("website", None)
         addons = validated_data.pop("addons", [])
         tariff_code = validated_data.pop("tariff_code", "")
+        venue_slug = validated_data.pop("venue", "")
         offering = validated_data.get("offering")
         character = validated_data.get("character")
         second_character = validated_data.get("second_character")
@@ -207,6 +209,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "travel": "Стоимость выезда уточним по адресу",
             "requires_manager_confirmation": True,
         }
+        if venue_slug:
+            snapshot["venue"] = {"slug": venue_slug, "name": dict(VENUE_CHOICES)[venue_slug], "status": "interest"}
         lead = Lead.objects.create(
             **validated_data, selection_snapshot=snapshot,
             consent_at=timezone.now(), consent_version=settings.LEAD_CONSENT_VERSION,

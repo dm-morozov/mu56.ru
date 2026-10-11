@@ -121,6 +121,8 @@ class LeadAdmin(admin.ModelAdmin):
     def snapshot_summary(self, obj):
         snapshot = obj.selection_snapshot
         lines = ["Программа: " + ((snapshot.get("offering") or {}).get("name") or "Помочь выбрать")]
+        if obj.venue_interest:
+            lines.append(f"Интерес к площадке: {obj.venue_interest} — доступность и условия согласуем; бронь не подтверждена.")
         if snapshot.get("character"):
             label = "Второй герой: " if (snapshot.get("offering") or {}).get("kind") == "transformer" else "Герой: "
             lines.append(label + snapshot["character"].get("name", ""))

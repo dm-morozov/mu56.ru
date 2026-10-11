@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { bookingCatalog, bookingOfferings } from "../frontend/src/lib/booking-catalog.ts";
 
 const offerings = [];
-let url = "http://127.0.0.1:8000/api/v1/offerings/";
+// CI uses port 8000; local Docker uses 8001. Follow the same explicit
+// backend setting as the application instead of checking a stale listener.
+const backendOrigin = process.env.BACKEND_ORIGIN || "http://127.0.0.1:8000";
+let url = new URL("/api/v1/offerings/", backendOrigin).href;
 while (url) {
   const response = await fetch(url);
   assert.equal(response.status, 200);

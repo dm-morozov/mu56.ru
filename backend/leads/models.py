@@ -3,6 +3,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
+VENUE_CHOICES = (("vinni-puh", "Винни-Пух"),)
+
 
 class Lead(models.Model):
     class Status(models.TextChoices):
@@ -45,6 +47,12 @@ class Lead(models.Model):
 
     def __str__(self):
         return f"{self.name or 'Клиент'} — {self.phone}"
+
+    @property
+    def venue_interest(self):
+        """Recognised initial interest, never a reservation or client-supplied name."""
+        venue = self.selection_snapshot.get("venue")
+        return dict(VENUE_CHOICES).get(venue.get("slug"), "") if isinstance(venue, dict) else ""
 
 
 class TelegramNotification(models.Model):

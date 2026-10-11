@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { initialSelection, selectionReducer, choose, close } from '../frontend/src/lib/selection.ts';
+import { bookingVenueForPath, bookingVenues } from '../frontend/src/lib/booking-venue.ts';
 
 const requestedAddons = ['sound', 'photographer', 'sound'];
 const picked = selectionReducer(initialSelection, choose({ offering: 'animation', character: 'spider-man', tariff: 'hour', addons: requestedAddons, soundRequired: true }));
@@ -24,4 +25,13 @@ assert.equal(reopened.soundRequired, false);
 assert.deepEqual(reopened.addons, []);
 assert.deepEqual(selectionReducer(reopened, choose({ soundRequired: true })).addons, ['sound']);
 assert.equal(selectionReducer(initialSelection, close()), initialSelection);
+const atVenue = selectionReducer(initialSelection, choose({ offering: 'animation', venue: 'vinni-puh' }));
+assert.equal(atVenue.venue, 'vinni-puh');
+assert.equal(selectionReducer(atVenue, close()).venue, 'vinni-puh');
+assert.equal(selectionReducer(atVenue, choose({ offering: 'full-party' })).venue, '');
+assert.equal(bookingVenueForPath('/venues/vinni-puh'), 'vinni-puh');
+assert.equal(bookingVenueForPath('/venues/vinni-puh/'), 'vinni-puh');
+assert.equal(bookingVenueForPath('/venues/vinni-puh-other'), '');
+assert.equal(bookingVenueForPath('/packages'), '');
+assert.equal(bookingVenues[atVenue.venue].name, 'Винни-Пух');
 console.log('Selection: choices, sound requirement, close/reopen, reset and immutable inputs passed');

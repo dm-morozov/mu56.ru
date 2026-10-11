@@ -1,7 +1,7 @@
-export type Selection = { open: boolean; offering: string; character: string; tariff: string; addons: string[]; soundRequired: boolean };
+export type Selection = { open: boolean; offering: string; character: string; tariff: string; addons: string[]; soundRequired: boolean; venue: string };
 export type SelectionOptions = Partial<Omit<Selection, "open">>;
 export type SelectionAction = { type: "selection/choose"; payload: SelectionOptions } | { type: "selection/close" };
-export const initialSelection: Selection = { open: false, offering: "", character: "", tariff: "", addons: [], soundRequired: false };
+export const initialSelection: Selection = { open: false, offering: "", character: "", tariff: "", addons: [], soundRequired: false, venue: "" };
 export const choose = (payload: SelectionOptions): SelectionAction => ({ type: "selection/choose", payload });
 export const close = (): SelectionAction => ({ type: "selection/close" });
 
@@ -15,6 +15,7 @@ export function selectionReducer(state: Selection, action: SelectionAction): Sel
     character: options.character || "",
     tariff: options.tariff || "",
     soundRequired,
+    venue: options.venue || "",
     addons: [...new Set([...(options.addons || []), ...(soundRequired ? ["sound"] : [])])],
   };
 }

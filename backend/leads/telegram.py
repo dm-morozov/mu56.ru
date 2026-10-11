@@ -114,6 +114,8 @@ def notification_payload(lead, chat_id):
         lines.append(f"Детей: {lead.children_count}")
     if lead.location:
         lines.append(f"Место: {clean(lead.location, 300)}")
+    if lead.venue_interest:
+        lines.append(f"Интерес к площадке: {lead.venue_interest} — доступность и условия согласуем; бронь не подтверждена.")
     amount = snapshot.get("known_program_amount_rub")
     if amount is not None:
         lines.append(f"Предварительный расчёт: {amount:,} ₽".replace(",", " "))

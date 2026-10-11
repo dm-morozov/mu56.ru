@@ -17,6 +17,8 @@ import { FormJourney } from "@/lib/form-journey";
 import { createSubmissionKey } from "@/lib/submission-key";
 import { bookingQuoteTotal, bookingQuoteErrorInfo, requestBookingQuote, type BookingQuote } from "@/lib/booking-quote";
 import { compatibleBookingAddons } from "@/lib/booking-addon-transition";
+import { bookingVenues } from "@/lib/booking-venue";
+import { bookingDraftKey, resumeBookingDraft } from "@/lib/booking-draft";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
@@ -38,6 +40,8 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const ref = useRef<HTMLDialogElement>(null);
   const journey = useRef<FormJourney | null>(null);
   const submissionKey = useRef<string | null>(null);
+  const draftEntry = useRef<string | null>(null);
+  const [formRevision, setFormRevision] = useState(0);
   if (!journey.current) journey.current = new FormJourney(track);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
@@ -45,6 +49,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [success, setSuccess] = useState(false);
   const [programSlug, setProgramSlug] = useState(""), [heroSlug, setHeroSlug] = useState("");
   const [eventDate, setEventDate] = useState(""), [eventTime, setEventTime] = useState("");
+  const [selectedVenue, setSelectedVenue] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [tariffCode, setTariffCode] = useState("");
   const [secondPerformer, setSecondPerformer] = useState(false);
@@ -83,7 +88,6 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
   useEffect(() => {
-    if (selection.open) submissionKey.current = null;
     if (selection.open) journey.current?.open({ program: selection.offering || "unknown", hero: selection.character || "unknown", details: !!(selection.offering || selection.character || selection.tariff || selection.addons?.length) });
     else journey.current?.close("close");
   }, [selection.open]);
@@ -105,9 +109,26 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     journey.current?.change(fieldName(el), el.name === "phone" && el.value.replace(/\D/g, "").length === 11 && el.validity.valid);
   }
   useEffect(() => {
-    if (selection.open) { setEventDate(""); setEventTime(""); setDetailsOpen(!!(selection.offering || selection.character || selection.tariff || selection.addons?.length)); setSuccess(false); setError(""); setSecondPerformer(false); setSecondHeroSlug(""); setAddons(addonOnly(selection.offering) ? [...new Set([...(selection.addons || []), selection.offering])] : selection.addons || []); setQuote(null); setProgramSlug(addonOnly(selection.offering) ? "animation" : selection.offering); setTariffCode(selection.tariff || ""); setHeroSlug(selection.character); ref.current?.showModal(); }
+    if (selection.open) {
+      const entryKey = bookingDraftKey(selection, window.location.pathname);
+      if (!resumeBookingDraft(draftEntry.current, entryKey)) {
+        draftEntry.current = entryKey;
+        submissionKey.current = null;
+        // Remount uncontrolled fields (including PhoneInput's formatting state)
+        // only for a new entry. Same-entry reopen keeps all fields in memory.
+        setFormRevision(value => value + 1);
+        setEventDate(""); setEventTime("");
+        setSelectedVenue(selection.venue);
+        setDetailsOpen(!!(selection.offering || selection.character || selection.tariff || selection.addons?.length));
+        setSuccess(false); setError(""); setSecondPerformer(false); setSecondHeroSlug("");
+        setAddons(addonOnly(selection.offering) ? [...new Set([...(selection.addons || []), selection.offering])] : selection.addons || []);
+        setQuote(null); setProgramSlug(addonOnly(selection.offering) ? "animation" : selection.offering);
+        setTariffCode(selection.tariff || ""); setHeroSlug(selection.character);
+      }
+      ref.current?.showModal();
+    }
     else ref.current?.close();
-  }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons]);
+  }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons, selection.soundRequired, selection.venue]);
   useEffect(() => {
     setQuote(null); setQuoteError("");
     if (!selection.open || !pricedComposition) return;
@@ -148,6 +169,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         name: data.get("name"), phone: data.get("phone"), contact_method: data.get("contact_method"),
         event_date: data.get("event_date") || null, event_time: data.get("event_time") || null, comment: data.get("comment"),
         offering: data.get("offering") || null,
+        venue: selectedVenue,
         tariff_code: selectedOffering?.kind === "seasonal" ? tariffCode : "",
         character: compatibleCharacter ? heroSlug || null : null,
         addons: selectedOffering ? addons : [],
@@ -164,6 +186,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         const field = Object.values(result)[0];
         throw new Error(response.status === 429 ? "Слишком много попыток. Можно связаться с нами по телефону." : typeof field === "string" ? field : Array.isArray(field) ? field.join(" ") : "Не удалось отправить заявку. Проверьте данные и попробуйте снова.");
       }
+      draftEntry.current = null; submissionKey.current = null;
       journey.current?.success(); setSuccess(true); form.reset();
     } catch (err) {
       journey.current?.error(err instanceof Error && ["AbortError", "TimeoutError"].includes(err.name) ? "timeout" : err instanceof Error && err.name === "TypeError" ? "network" : failureReason, failureStatus);
@@ -184,8 +207,9 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     <button className="dialog-close" aria-label="Закрыть форму" disabled={busy} onClick={() => dispatch(close())}><X /></button>
     {success ? <div className="form-success"><span><Check /></span><h2 id="lead-success-title" ref={successRef} tabIndex={-1}>Первый шаг к празднику сделан!</h2><p>Заявка сохранена. Обсудим с вами дату, программу и выезд.</p><button className="button orange" onClick={() => dispatch(close())}>Отлично</button></div> : <>
       <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">{detailsOpen ? "Выберите состав праздника. Дату и детали согласуем с вами." : "Оставьте телефон — поможем выбрать программу. Дату и героя можно решить вместе."}</p>
-      <form className="ym-disable-keys" onSubmit={submit} onChange={changed} onFocusCapture={event => journey.current?.focus(fieldName(event.target))} onInvalidCapture={event => journey.current?.invalid(fieldName(event.target))}>
+      <form key={formRevision} className="ym-disable-keys" onSubmit={submit} onChange={changed} onFocusCapture={event => journey.current?.focus(fieldName(event.target))} onInvalidCapture={event => journey.current?.invalid(fieldName(event.target))}>
         <fieldset className="lead-fields" disabled={busy}>
+        {bookingVenues[selection.venue] && <label className="lead-venue-interest"><input type="checkbox" name="venue" checked={!!selectedVenue} onChange={event => setSelectedVenue(event.target.checked ? selection.venue : "")} /><span>Рассматриваю «{bookingVenues[selection.venue].name}»<small>{bookingVenues[selection.venue].address}. Доступность и условия площадки согласуем отдельно.</small></span></label>}
         <div className="form-row"><label>Ваше имя<input name="name" autoComplete="given-name" maxLength={100} placeholder="Как к вам обращаться" /></label><label>Телефон<PhoneInput /></label></div>
         <label>Как связаться<select name="contact_method"><option value="phone">Позвонить</option><option value="telegram">Telegram</option><option value="max">MAX</option></select></label>
         <button type="button" className="lead-details-toggle" aria-expanded={detailsOpen} aria-controls="lead-program-details" onClick={() => { if (!detailsOpen) track("details_open"); journey.current?.change("details"); setDetailsOpen(value => !value); }}><span>{detailsOpen ? "Свернуть детали праздника" : "Указать дату и выбрать программу"}<small>{detailsOpen ? "Ваш выбор сохранится в заявке" : "Необязательно — можно обсудить с нами"}</small></span><span aria-hidden="true">{detailsOpen ? "−" : "+"}</span></button>
