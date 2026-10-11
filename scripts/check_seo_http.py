@@ -36,6 +36,7 @@ class Head(HTMLParser):
 parser = argparse.ArgumentParser()
 parser.add_argument("--base", default="http://127.0.0.1:3000")
 parser.add_argument("--indexing", action="store_true")
+parser.add_argument("--report", type=Path, help="Write results to this path instead of docs/seo-check.json")
 args = parser.parse_args()
 base = args.base.rstrip("/")
 def get(path):
@@ -50,7 +51,7 @@ def catalog(route):
             return rows
         page += 1
 
-paths = {p:p for p in ["/", "/animators", "/transformers", "/packages", "/shows", "/extras", "/characters", "/new-year", "/gallery", "/contacts", "/reviews", "/articles", "/holidays", "/holidays/kindergarten", "/holidays/graduation", "/holidays/large-events"]}
+paths = {p:p for p in ["/", "/animators", "/transformers", "/packages", "/shows", "/extras", "/characters", "/new-year", "/gallery", "/contacts", "/reviews", "/articles", "/holidays", "/holidays/kindergarten", "/holidays/graduation", "/holidays/large-events", "/venues", "/venues/vinni-puh"]}
 for hero in catalog("characters"):
     slug = hero["slug"]
     if slug == "new-year-duo":
@@ -84,7 +85,7 @@ else:
     assert "Disallow: /" in robots
     assert not urls
 report = {"pages_checked":len(paths), "indexing_enabled":args.indexing, "sitemap_urls":len(urls), "result":"passed"}
-target = Path(__file__).resolve().parents[1] / "docs/seo-check.json"
+target = args.report or Path(__file__).resolve().parents[1] / "docs/seo-check.json"
 target.write_text(json.dumps(report, indent=2), encoding="utf-8")
 print(json.dumps(report))
 

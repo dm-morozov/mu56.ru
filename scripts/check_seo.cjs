@@ -18,6 +18,8 @@ const urls = result.map(row => row.url);
 assert.equal(new Set(urls).size, urls.length);
 assert(urls.includes(seo.absoluteUrl('/transformers/bumblebee')));
 assert(urls.includes(seo.absoluteUrl('/animators')));
+assert(urls.includes(seo.absoluteUrl('/venues')));
+assert(urls.includes(seo.absoluteUrl('/venues/vinni-puh')));
 assert.equal(seo.servicePath('animation', 'animation'), '/animators');
 assert(!urls.includes(seo.absoluteUrl('/characters/bumblebee')));
 assert(!urls.includes(seo.absoluteUrl('/characters/new-year-duo')));

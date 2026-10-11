@@ -21,7 +21,7 @@ export function CharacterCard({ character, index = 0, headingLevel = 3 }: { char
       {src ? <Image sizes="(max-width: 600px) 50vw, (max-width: 900px) 50vw, 400px" src={src} alt={host ? "Дмитрий Морозов, основатель «Мира Улыбок»" : name} loading="lazy" width="400" height="520" /> : <div className="no-portrait"><Mic2 size={52} /><span>Программа с ведущим</span></div>}
       <span className="card-open"><ArrowUpRight size={20} /></span>
     </Link>
-    <div className="character-info"><p>{character.category}</p><Heading className="character-card-title"><Link href={href}>{name}</Link></Heading>{host && <p className="character-team-note">На фото — основатель. Программу проводит команда.</p>}{character.availability === "check" && <span className="availability-note">Доступность уточняйте</span>}</div>
+    <div className="character-info"><p>{character.category}</p><Heading className="character-card-title"><Link href={href}>{name}</Link></Heading>{host && <p className="character-team-note">Образ основателя Дмитрия Морозова. Программу проводит команда.</p>}{character.availability === "check" && <span className="availability-note">Доступность уточняйте</span>}</div>
   </article>;
 }
 

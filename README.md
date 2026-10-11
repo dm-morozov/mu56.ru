@@ -1,8 +1,18 @@
 # Мир Улыбок — mu56.ru
 
-Подготовка Linux-размещения, службы Django/Next/Telegram, HTTPS и проверки: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Обычный локальный запуск Windows описан ниже.
+Текущее размещение: одна production-версия в Docker на https://mu56.ru.
+Развёртывание и обновление: [docs/DOCKER_DEPLOY.md](docs/DOCKER_DEPLOY.md),
+переключение домена: [docs/PRODUCTION_SWITCH.md](docs/PRODUCTION_SWITCH.md).
+Локальная разработка: [docs/LOCAL_DOCKER.md](docs/LOCAL_DOCKER.md).
+Текущий план развития: [docs/GROWTH_ROADMAP_2026-10-09.md](docs/GROWTH_ROADMAP_2026-10-09.md).
+Старые инструкции Linux/systemd: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-Готовы Django-каталог, админка, публичный API, страницы и сохранение заявок. PostgreSQL и уведомления владельцу в Telegram подключены локально. Календарь ещё не подключён. Живой mu56.ru не изменён.
+Django-каталог, админка, публичный API, страницы, сохранение заявок и
+уведомления владельцу в Telegram опубликованы. 10 октября проверены
+работающие backend, frontend, database, gateway и worker; ошибок очереди
+не обнаружено. Это снимок проверки, а не постоянная гарантия доступности.
+Календарь занятости ещё не подключён. Новые локальные правки публикуются
+отдельным проверенным релизом.
 
 ## Основа
 

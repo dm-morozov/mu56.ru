@@ -8,8 +8,12 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Maximize2, X } from "lucide-react";
 import type { CharacterPhoto } from "@/lib/types";
 
-export function PhotoGallery({ photos, title, description, eyebrow = "Такие встречи уже случались", layout = "grid", className = "" }: {
-  photos: CharacterPhoto[]; title: string; description: string; eyebrow?: string; layout?: "grid" | "carousel"; className?: string;
+// Auto uses the actual lazy image slot, including galleries nested in articles.
+// Fallback follows .container gutters and the gallery's one/two-column layout.
+const gridPhotoSizes = "auto, (max-width:440px) calc(100vw - 36px), (max-width:600px) calc(50vw - 24px), (max-width:700px) calc(50vw - 30px), (max-width:1100px) calc(50vw - 36px), (max-width:1320px) calc(50vw - 52px), 608px";
+
+export function PhotoGallery({ photos, title, description, eyebrow = "Такие встречи уже случались", layout = "grid", className = "", carouselSizes = "(max-width:700px) 100vw, 1100px" }: {
+  photos: CharacterPhoto[]; title: string; description: string; eyebrow?: string; layout?: "grid" | "carousel"; className?: string; carouselSizes?: string;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const [slide, setSlide] = useState(0);
@@ -60,7 +64,7 @@ export function PhotoGallery({ photos, title, description, eyebrow = "Такие
         if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) { swiped.current = true; moveSlide(dx < 0 ? 1 : -1); }
       }}>
         <button type="button" className="photo-carousel-photo" aria-haspopup="dialog" aria-label={`Открыть фотографию ${slide + 1}: ${photos[slide].alt}`} onClick={event => { if (swiped.current) { swiped.current = false; return; } openPhoto(slide, event.currentTarget); }}>
-          <Image key={photos[slide].url} src={photos[slide].url} alt={photos[slide].alt} width={1800} height={1200} sizes="(max-width:700px) 100vw, 1100px" loading="eager" />
+          <Image key={photos[slide].url} src={photos[slide].url} alt={photos[slide].alt} width={1800} height={1200} sizes={carouselSizes} loading="eager" />
           <span className="photo-gallery-expand" aria-hidden="true"><Maximize2 size={18} /></span>
         </button>
         <button type="button" className="photo-carousel-prev" aria-label="Предыдущая фотография" onClick={() => moveSlide(-1)}><ArrowLeft size={23} /></button>
@@ -68,7 +72,7 @@ export function PhotoGallery({ photos, title, description, eyebrow = "Такие
       </div>
       <div className="photo-carousel-footer"><p aria-live="polite">{photos[slide].alt} <span>{slide + 1} / {photos.length}</span></p><button type="button" className="text-link" aria-haspopup="dialog" onClick={event => openPhoto(slide, event.currentTarget)}>Все фотографии <ArrowRight size={18} aria-hidden="true" /></button></div>
     </> : <><div className="photo-gallery-grid">{photos.slice(0, 4).map((item, index) => <button type="button" key={item.url} className="photo-gallery-tile" aria-label={`Открыть фотографию ${index + 1}: ${item.alt}`} onClick={event => openPhoto(index, event.currentTarget)}>
-      <Image src={item.url} alt={item.alt} width={720} height={480} sizes="(max-width:600px) 100vw, (max-width:1000px) 50vw, 400px" />
+      <Image src={item.url} alt={item.alt} width={720} height={480} sizes={gridPhotoSizes} loading="lazy" />
       <span className="photo-gallery-expand" aria-hidden="true"><Maximize2 size={18} /></span>
       <span className="photo-gallery-caption">{item.alt}</span>
     </button>)}</div>

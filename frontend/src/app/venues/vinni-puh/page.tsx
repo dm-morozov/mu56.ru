@@ -9,6 +9,10 @@ import { pageMetadata } from "@/lib/seo";
 import styles from "./venue.module.css";
 import { venuePhotos } from "./photos";
 
+// Full width through 900px; above it the gallery takes 1.35 / 2.35 of
+// the container minus its 40px column gap (container is capped at 1240px).
+const heroGallerySizes = "(max-width:600px) calc(100vw - 36px), (max-width:900px) calc(100vw - 48px), (max-width:1100px) calc(57.4469vw - 50.5532px), (max-width:1320px) calc(57.4469vw - 68.9362px), 690px";
+
 export const metadata = {
   ...pageMetadata("Детский праздник в «Винни-Пухе»", "Праздники с командой «Мира Улыбок» в кондитерском доме «Винни-Пух» на Ульянова, 81: анимация, выбор программы и согласование площадки.", "/venues/vinni-puh"),
 };
@@ -22,7 +26,7 @@ export default async function VinniPuhPage() {
   return <main id="main">
     <PageIntro path="/venues/vinni-puh" breadcrumbLabel="Праздники в «Винни-Пухе»" parents={[{ label: "Площадки для праздника", href: "/venues" }]} eyebrow="Площадка, где мы проводим праздники" title="Детский праздник в «Винни-Пухе»" description="" />
     <section className={`container ${styles.hero}`} aria-labelledby="venue-animation">
-      <PhotoGallery className={styles.gallery} photos={venuePhotos} layout="carousel" title="Наши праздники в «Винни-Пухе»" description="Игры и встречи с героями на знакомой площадке." />
+      <PhotoGallery className={styles.gallery} photos={venuePhotos} layout="carousel" carouselSizes={heroGallerySizes} title="Наши праздники в «Винни-Пухе»" description="Игры и встречи с героями на знакомой площадке." />
       <div className={styles.heroCopy}>
         <span className="eyebrow">Праздник с «Миром Улыбок»</span>
         <h2 id="venue-animation">Анимация с любимым героем</h2>

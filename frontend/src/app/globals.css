@@ -125,7 +125,7 @@
 
 .reviews-source{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 30px;padding:22px 0;margin-bottom:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.reviews-source p{margin:0;max-width:650px;font-size:13px;color:var(--muted)}.reviews-source a{font-size:13px}.review-card figcaption a:hover{color:var(--orange)}.extra-details{align-self:center;font-size:12px;margin-top:16px}
 .pinata-cover img{object-fit:cover!important;object-position:center!important}
-.character-card-host .character-visual>img{height:140%;object-position:center top;align-self:flex-start}
+.character-card-host .character-visual>img{height:100%;object-fit:contain;object-position:center bottom}
 .character-card-host .character-info .character-team-note{font-size:11px;line-height:1.5;margin-top:12px;margin-bottom:0;color:var(--muted)}
 
 /* Keep card heading typography independent of its semantic level. */

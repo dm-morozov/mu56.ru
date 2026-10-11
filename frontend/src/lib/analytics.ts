@@ -8,6 +8,7 @@ export const goals = {
   program_select: "Форма: выбрали программу", hero_select: "Форма: выбрали героя",
   form_submit: "Форма: попытка отправки", validation_error: "Форма: проверьте поле",
   submit_error: "Форма: ошибка отправки", lead_success: "Заявка сохранена",
+  quote_error: "Форма: ошибка расчёта",
   form_abandon: "Форма: закрыли без отправки", contact_click: "Контакт: переход",
   catalog_search: "Каталог: поиск", catalog_filter: "Каталог: порядок и категория",
   media_interact: "Медиа: просмотр",
@@ -18,7 +19,7 @@ type Ym = ((id: number, method: string, ...args: unknown[]) => void) & { a?: unk
 declare global { interface Window { ym?: Ym; mu56AnalyticsReady?: boolean } }
 const enums: Record<string, readonly string[]> = {
   field: ["name", "phone", "contact_method", "event_date", "event_time", "offering", "hero", "second_hero", "second_performer", "comment", "data_consent", "details", "addons", "tariff", "unknown"],
-  reason: ["close", "pagehide", "network", "timeout", "csrf", "rate_limit", "server", "validation", "unknown"],
+  reason: ["close", "pagehide", "network", "timeout", "csrf", "conflict", "rate_limit", "server", "validation", "unknown"],
   channel: ["phone", "telegram", "max", "vk", "avito", "instagram", "maps", "other"],
   action: ["open", "play", "complete", "next", "previous", "filter", "sort", "select", "change"],
   kind: ["animation", "transformer", "package", "show", "extra", "seasonal", "unknown"],
@@ -27,7 +28,11 @@ const enums: Record<string, readonly string[]> = {
 };
 export function safePath(path: string): string | null {
   const clean = path.split(/[?#]/)[0].replace(/\/$/, "") || "/";
-  return /^(\/|\/(animators|transformers|packages|characters|shows|extras|new-year|gallery|contacts|reviews|articles|holidays)(\/[a-z-]{1,70})?)$/.test(clean) ? clean : null;
+  return /^(\/|\/(animators|transformers|packages|characters|shows|extras|new-year|gallery|contacts|reviews|articles|holidays|venues)(\/[a-z-]{1,70})?)$/.test(clean) ? clean : null;
+}
+// This POST endpoint returns 403 on CSRF rejection and 409 on a saved-key conflict.
+export function submissionErrorReason(status: number): string {
+  return status === 403 ? "csrf" : status === 409 ? "conflict" : status === 429 ? "rate_limit" : status >= 500 ? "server" : status === 400 || status === 422 ? "validation" : "unknown";
 }
 export function contactChannel(href: string): string {
   try {

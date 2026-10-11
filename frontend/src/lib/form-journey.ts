@@ -30,6 +30,9 @@ export class FormJourney {
   invalid(field: string) { this.focus(field); this.emit("validation_error", this.params({ reason: "validation" })); }
   submit() { this.attempts++; this.emit("form_submit", this.params()); }
   error(reason: string, status = 0) { this.emit("submit_error", this.params({ reason, status })); }
+  quoteError(reason: string, status = 0) {
+    if (this.opened && !this.saved) this.emit("quote_error", this.params({ reason, status }));
+  }
   success() { if (this.saved) return; this.saved = true; this.emit("lead_success", this.params()); }
   close(reason: "close" | "pagehide") {
     if (!this.opened) return;

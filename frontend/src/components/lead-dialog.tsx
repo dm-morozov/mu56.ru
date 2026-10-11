@@ -12,10 +12,10 @@ import { PhoneInput } from "./phone-input";
 import { close, useAppDispatch, useSelection } from "./store-provider";
 import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
 import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
-import { track, priceBand } from "@/lib/analytics";
+import { track, priceBand, submissionErrorReason } from "@/lib/analytics";
 import { FormJourney } from "@/lib/form-journey";
 import { createSubmissionKey } from "@/lib/submission-key";
-import { bookingQuoteTotal, requestBookingQuote, type BookingQuote } from "@/lib/booking-quote";
+import { bookingQuoteTotal, bookingQuoteErrorInfo, requestBookingQuote, type BookingQuote } from "@/lib/booking-quote";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
@@ -114,7 +114,12 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     const params = new URLSearchParams({ offering: programSlug, addons: addons.filter(slug => slug !== "photographer").join(",") });
     requestBookingQuote(`/api/v1/${animation ? "animation" : "transformer"}-quote/?${params}`, controller.signal)
       .then(data => { if (!controller.signal.aborted) setQuote(data); })
-      .catch(err => { if (!controller.signal.aborted) setQuoteError(err instanceof Error ? err.message : "Не удалось рассчитать стоимость."); });
+      .catch(err => {
+        if (controller.signal.aborted) return;
+        setQuoteError(err instanceof Error ? err.message : "Не удалось рассчитать стоимость.");
+        const diagnostic = bookingQuoteErrorInfo(err);
+        journey.current?.quoteError(diagnostic.reason, diagnostic.status);
+      });
     return () => controller.abort();
   }, [selection.open, pricedComposition, animation, programSlug, addons, quoteAttempt]);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
@@ -153,7 +158,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
       submissionKey.current ??= createSubmissionKey();
       const response = await fetch("/api/v1/leads/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token, "Idempotency-Key": submissionKey.current }, body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
       if (!response.ok) {
-        failureStatus = response.status; failureReason = response.status === 429 ? "rate_limit" : response.status >= 500 ? "server" : "validation";
+        failureStatus = response.status; failureReason = submissionErrorReason(response.status);
         const result = await response.json().catch(() => ({}));
         const field = Object.values(result)[0];
         throw new Error(response.status === 429 ? "Слишком много попыток. Можно связаться с нами по телефону." : typeof field === "string" ? field : Array.isArray(field) ? field.join(" ") : "Не удалось отправить заявку. Проверьте данные и попробуйте снова.");
