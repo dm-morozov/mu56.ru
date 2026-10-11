@@ -16,6 +16,7 @@ import { track, priceBand, submissionErrorReason } from "@/lib/analytics";
 import { FormJourney } from "@/lib/form-journey";
 import { createSubmissionKey } from "@/lib/submission-key";
 import { bookingQuoteTotal, bookingQuoteErrorInfo, requestBookingQuote, type BookingQuote } from "@/lib/booking-quote";
+import { compatibleBookingAddons } from "@/lib/booking-addon-transition";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
@@ -60,7 +61,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const packageBase = packaged ? basePrice(program) : undefined;
   const secondTariff = packaged ? program.prices.find(price => price.context === "second_performer") : undefined;
   const packageAmount = packageBase === undefined ? undefined : packageBase + (secondPerformer && secondTariff ? secondTariff.amount_rub : 0);
-  const soundIncluded = program?.slug === "foam" || program?.parts.some(part => part.service_slug === "foam") || addons.includes("foam") || (program?.kind === "seasonal" && tariffCode === "group-with-sound");
+  const soundIncluded = program?.slug === "foam" || program?.parts.some(part => part.service_slug === "foam" || part.service_slug === "sound") || addons.includes("foam") || (program?.kind === "seasonal" && tariffCode === "group-with-sound");
   const selectedExtras = offerings.filter(item => addonOnly(item.slug) && addons.includes(item.slug));
   const extraAmount = selectedExtras.reduce((sum, item) => sum + (basePrice(item) ?? 0), 0);
   const extrasKnown = selectedExtras.every(item => basePrice(item) !== undefined);
@@ -192,7 +193,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         <div id="lead-program-details" hidden={!detailsOpen}>
         <div className="form-row"><label>Дата праздника<input name="event_date" type="date" value={eventDate} onClick={openMobileDateTimePicker} onInput={event => setEventDate(event.currentTarget.value)} onChange={event => setEventDate(event.target.value)} /></label><label>Время начала программы<input name="event_time" type="time" value={eventTime} onClick={openMobileDateTimePicker} onInput={event => setEventTime(event.currentTarget.value)} onChange={event => setEventTime(event.target.value)} aria-describedby="event-time-help" /></label></div>
         <p id="event-time-help" className="hero-picker-help event-time-help">Время по Оренбургу. Начало программы лучше планировать на 15 минут позже сбора гостей.</p>
-        <ProgramPicker offerings={offerings} value={programSlug} label={transformer ? "Большой герой и программа" : "Программа"} onChange={slug => { track("program_select", {program: slug || "unknown"}); journey.current?.change("offering"); setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons([]); setQuote(null); const next = offerings.find(item => item.slug === slug); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }} />
+        <ProgramPicker offerings={offerings} value={programSlug} label={transformer ? "Большой герой и программа" : "Программа"} onChange={slug => { track("program_select", {program: slug || "unknown"}); journey.current?.change("offering"); const next = offerings.find(item => item.slug === slug); setProgramSlug(slug); setSecondPerformer(false); setSecondHeroSlug(""); setAddons(current => compatibleBookingAddons(current, next, offerings, tariffCode)); setQuote(null); if (next && !next.characters.some(hero => hero.slug === heroSlug && ordinaryHero(hero))) setHeroSlug(""); }} />
         {packaged && <section className="lead-package" aria-labelledby="lead-package-title">
           <h3 id="lead-package-title">{program.name}<span>{packageBase === undefined ? "Стоимость уточним" : rubles(packageBase)}</span></h3>
           <fieldset className="lead-addons package-inclusions" aria-labelledby="package-inclusions-title"><h4 id="package-inclusions-title">В программу входит</h4><p>Все пункты включены в пакет. Чтобы изменить состав, выберите другую программу.</p>{program.parts.map(part => <PackagePart key={`${program.slug}-${part.position}`} part={part} description={!part.led_by_performer ? "После анимации и шоу колонка продолжает играть фоновую музыку, пока аниматоры собирают всё оборудование на вашем празднике. Колонку забирают в последнюю очередь, когда остальное оборудование уже сложено. В это время ведущие не проводят игры, конкурсы и шоу." : offerings.find(item => item.slug === part.service_slug)?.description} />)}</fieldset>

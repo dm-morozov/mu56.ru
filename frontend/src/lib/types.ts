@@ -1,4 +1,4 @@
-export type CharacterPhoto = { url: string; alt: string; position: number };
+export type CharacterPhoto = { url: string; alt: string; position: number; thumbnailPosition?: string };
 export type Character = { slug: string; name: string; category: string; description: string; availability: string; availability_label: string; photos: CharacterPhoto[] };
 export type Price = { code: string; label: string; context: string; amount_rub: number; duration_minutes: number | null };
 export type Part = { position: number; title: string; duration_minutes: number; is_approximate: boolean; led_by_performer: boolean; service_slug: string | null };

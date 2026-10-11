@@ -72,7 +72,7 @@ export function PhotoGallery({ photos, title, description, eyebrow = "Такие
       </div>
       <div className="photo-carousel-footer"><p aria-live="polite">{photos[slide].alt} <span>{slide + 1} / {photos.length}</span></p><button type="button" className="text-link" aria-haspopup="dialog" onClick={event => openPhoto(slide, event.currentTarget)}>Все фотографии <ArrowRight size={18} aria-hidden="true" /></button></div>
     </> : <><div className="photo-gallery-grid">{photos.slice(0, 4).map((item, index) => <button type="button" key={item.url} className="photo-gallery-tile" aria-label={`Открыть фотографию ${index + 1}: ${item.alt}`} onClick={event => openPhoto(index, event.currentTarget)}>
-      <Image src={item.url} alt={item.alt} width={720} height={480} sizes={gridPhotoSizes} loading="lazy" />
+      <Image src={item.url} alt={item.alt} width={720} height={480} sizes={gridPhotoSizes} loading="lazy" style={item.thumbnailPosition ? { objectPosition: item.thumbnailPosition } : undefined} />
       <span className="photo-gallery-expand" aria-hidden="true"><Maximize2 size={18} /></span>
       <span className="photo-gallery-caption">{item.alt}</span>
     </button>)}</div>

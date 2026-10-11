@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { Offering, basePrice, duration, rubles } from "@/lib/types";
 import { ChooseButton } from "./choose-button";
-import { packageTiming } from "@/lib/packages";
+import { packagePrice, packageTiming } from "@/lib/packages";
 
 const suggestions: Record<string, string> = {
   "sweet-vibe": "Когда хочется героя и сладкого мастер-класса",
@@ -31,6 +31,7 @@ export function PackageComparison({ packages }: { packages: Offering[] }) {
         <tr><th scope="row">Анимация с героем</th>{summaries.map(({ item }) => { const part = item.parts.find(part => part.led_by_performer && part.service_slug === "animation"); return <td key={item.slug}>{part ? duration(part.duration_minutes) : "Не входит"}</td>; })}</tr>
         {showRows.map(([slug, title]) => <tr key={slug}><th scope="row">{title}</th>{summaries.map(({ item }) => { const part = item.parts.find(part => part.service_slug === slug && part.led_by_performer); return <td key={item.slug}>{part ? `${part.is_approximate ? "≈ " : ""}${duration(part.duration_minutes)}` : <span className="comparison-absent">Не входит</span>}</td>; })}</tr>)}
         <tr><th scope="row">Участников команды в базовом составе</th>{summaries.map(({ item }) => <td key={item.slug}>{item.included_performers}</td>)}</tr>
+        <tr><th scope="row">Комплект мощного звука с двумя микрофонами</th>{summaries.map(({ item }) => <td key={item.slug}>{packagePrice(item, [], true).addonSound ? "Добавляется при необходимости" : "Включён в цену"}</td>)}</tr>
         <tr><th scope="row">Добавить второго аниматора</th>{summaries.map(({ item, extra }) => <td key={item.slug}>{extra ? `+ ${rubles(extra.amount_rub)}` : "Обсудим состав"}</td>)}</tr>
         <tr className="comparison-idea"><th scope="row">Можно выбрать, если…</th>{summaries.map(({ item }) => <td key={item.slug}>{suggestions[item.slug] || "Вам нравится такой состав программы"}</td>)}</tr>
         <tr><th scope="row">Обсудить дату и состав</th>{summaries.map(({ item }) => <td key={item.slug}><ChooseButton offering={item.slug} className={`button ${item.slug === "full-party" ? "orange" : "outline"}`}>Выбрать</ChooseButton></td>)}</tr>

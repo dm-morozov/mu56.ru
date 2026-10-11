@@ -124,6 +124,7 @@ jobs:
           node --experimental-transform-types scripts/check_analytics.mjs
           node --experimental-transform-types scripts/check_selection.mjs
           node --experimental-transform-types scripts/check_booking_quote.mjs
+          node --experimental-transform-types scripts/check_booking_addon_transition.mjs
       - name: Build and publish pinned Docker images
         id: images
         if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006' && steps.changes.outputs.images == 'true'

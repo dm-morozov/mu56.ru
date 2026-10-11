@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import { compatibleBookingAddons } from '../frontend/src/lib/booking-addon-transition.ts';
+const item = (slug, kind, contexts = ['base'], services = []) => ({
+  slug, kind, availability: 'available', prices: contexts.map(context => ({context,amount_rub:1})),
+  parts: services.map(service_slug => ({service_slug})),
+});
+const ice=item('ice-breath','package',['base'],['animation','nitrogen']);
+const sweet=item('sweet-vibe','package',['base'],['animation','cotton-candy-show']);
+const animation=item('animation','animation');
+const bumblebee=item('bumblebee','transformer');
+const optimus=item('optimus-prime','transformer');
+const foamPack=item('foam-party','package',['base'],['animation','foam']);
+const nitrogen=item('nitrogen','show',['with_animation','transformer_support']);
+const ribbons=item('ribbons','show',['with_animation']);
+const foam=item('foam','show',['base','with_animation']);
+const sound=item('sound','extra');
+const photographer=item('photographer','extra');
+const unavailable={...item('closed-show','show',['base']),availability:'unavailable'};
+const unpriced=item('unknown-show','show',[]);
+const newYear=item('new-year','seasonal');
+const catalog=[ice,sweet,animation,bumblebee,optimus,foamPack,nitrogen,ribbons,foam,sound,photographer,unavailable,unpriced,newYear];
+const keep=(selected,next,tariff='')=>compatibleBookingAddons(selected,next,catalog,tariff);
+assert.deepEqual(keep(['sound','photographer'],sweet),['sound','photographer']);
+assert.deepEqual(keep(['nitrogen','sound'],optimus),['nitrogen','sound']);
+assert.deepEqual(keep(['nitrogen','ribbons','sound'],bumblebee),['nitrogen','sound']);
+assert.deepEqual(keep(['nitrogen','ribbons','sound'],ice),['sound']);
+assert.deepEqual(keep(['sound','foam','photographer'],foamPack),['photographer']);
+assert.deepEqual(keep(['sound','foam'],animation),['foam']);
+assert.deepEqual(keep(['sound'],foam),[]);
+assert.deepEqual(keep(['nitrogen','photographer'],nitrogen),['photographer']);
+assert.deepEqual(keep(['closed-show','unknown-show','missing','sound','sound'],animation),['sound']);
+assert.deepEqual(keep(['nitrogen','ribbons','sound'],newYear),['nitrogen','sound']);
+assert.deepEqual(keep(['nitrogen','sound'],newYear,'eve-18'),['sound']);
+assert.deepEqual(keep(['nitrogen','sound'],newYear,'group-with-sound'),['nitrogen']);
+assert.deepEqual(keep(['sound'],undefined),[]);
+assert.deepEqual(keep(['sound'],{...sweet,availability:'unavailable'}),[]);
+assert.deepEqual(keep(['sound'],item('sound-included','package',['base'],['sound'])),[]);
+const original=['sound','sound','nitrogen']; keep(original,ice);
+assert.deepEqual(original,['sound','sound','nitrogen']);
+console.log('Booking addon transitions: packages, transformer tariffs, unavailable/included services, foam sound, seasonal constraints and immutable choices passed.');

@@ -33,6 +33,7 @@ export default async function VinniPuhPage() {
         <p>Встречаемся с детьми в «Винни-Пухе», знакомимся, играем и танцуем. Вы выбираете героя, а мы подбираем игры и темп программы по возрасту и интересам ребят.</p>
         <p>Начнём с анимации — при желании добавим шоу или выберем готовый пакет. Дату и условия проведения согласуем заранее.</p>
         {animation && price !== undefined && <p className={styles.price}>от {rubles(price)} <span>· {duration(animation.duration_minutes)}</span></p>}
+        <p className={styles.note}>Стоимость программы. Площадка и угощения оплачиваются отдельно.</p>
         {animation && <ChooseButton offering={animation.slug}>Обсудить программу</ChooseButton>}
         <Link className="text-link" href="/animators">Выбрать героя и посмотреть состав →</Link>
       </div>

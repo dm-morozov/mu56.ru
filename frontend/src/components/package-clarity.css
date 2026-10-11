@@ -1,0 +1,5 @@
+.package-contents .package-stage-condition { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: var(--navy); }
+.package-stage-condition a { text-decoration: underline; text-underline-offset: 3px; }
+.package-stage-condition a:hover { color: var(--orange); }
+.package-active-time { margin: 0 0 12px; font-size: 14px; line-height: 1.7; }
+.package-active-time span { display: block; color: var(--muted); }
