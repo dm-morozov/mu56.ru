@@ -72,6 +72,11 @@ for path, canonical in paths.items():
     assert bool(head.meta.get("description")), path
     assert ("noindex" not in head.meta.get("robots", "")) == args.indexing, path
     assert any(s.get("@type") == "Organization" for s in head.schemas), path
+    websites = [s for s in head.schemas if s.get("@type") == "WebSite"]
+    if path == "/":
+        assert websites == [{"@context": "https://schema.org", "@type": "WebSite", "@id": "https://mu56.ru/#website", "name": "Мир Улыбок", "url": "https://mu56.ru/"}], (path, websites)
+    else:
+        assert not websites, (path, "WebSite belongs on the home page only")
     for schema in head.schemas:
         if schema.get("@type") == "Service":
             assert schema["url"] == head.canonical

@@ -121,6 +121,7 @@ jobs:
           fi
           pnpm --dir frontend build
           pnpm --dir frontend typecheck
+          node scripts/check_seo.cjs
           node --experimental-transform-types scripts/check_analytics.mjs
           node --experimental-transform-types scripts/check_selection.mjs
           node --experimental-transform-types scripts/check_booking_draft.mjs
@@ -158,6 +159,7 @@ jobs:
             exit 1
           fi
           node --experimental-transform-types scripts/check_booking_catalog.mjs
+          python scripts/check_seo_http.py --base http://127.0.0.1:3100 --indexing --report "$BROWSER_QA_OUTPUT/seo-http.json"
           npm --prefix scripts/browser-qa test
       - name: Record public HTTPS diagnostics
         if: ${{ always() && github.event_name == 'pull_request' }}

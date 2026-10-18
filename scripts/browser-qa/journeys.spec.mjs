@@ -96,6 +96,12 @@ test('home consent, programme discovery and menu recovery', async ({ page }, inf
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Мир Улыбок/);
   await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /Выездные детские праздники/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /^https:\/\/mu56\.ru\/?$/);
+  const schemas = await page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.map(node => JSON.parse(node.textContent)));
+  expect(schemas.filter(schema => schema['@type'] === 'WebSite')).toEqual([{
+    '@context': 'https://schema.org', '@type': 'WebSite', '@id': 'https://mu56.ru/#website',
+    name: 'Мир Улыбок', url: 'https://mu56.ru/',
+  }]);
+  expect(schemas.filter(schema => schema['@type'] === 'Organization')).toHaveLength(1);
   const decline = page.getByRole('button', { name: 'Пока без аналитики', exact: true });
   await expect(decline).toBeVisible();
   await noOverflow(page);
@@ -172,6 +178,7 @@ test('catalogue comparison context survives Back and Forward', async ({ page }, 
   const catalogScroll = await page.evaluate(() => scrollY);
   await heroLink.click();
   await expect(page).toHaveURL(/\/characters\/spider-man$/);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', 'Аниматор Человек-паук на день рождения в Оренбурге. Игровая миссия, фотографии костюма, программа и стоимость. Выезд на вашу площадку.');
   await page.goBack();
   await expect(page).toHaveURL(/\/characters$/);
   await expect(search).toHaveValue('паук');
@@ -226,6 +233,8 @@ test('Back dismisses idle enquiry without losing the same-entry draft', async ({
 
 test('package enquiry stays recoverable through a long form', async ({ page }, info) => {
   await page.goto('/packages');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', 'Пять пакетов с аниматором и шоу в Оренбурге. Сравните состав, цены и время игр с ведущим. Фоновая музыка после программы показана отдельно.');
+  await expect(page.locator('.page-intro')).toContainText('Музыка после программы — фоновая, пока команда собирает оборудование.');
   await dismissAnalytics(page);
   await noOverflow(page);
   await capture(page, info, 'packages');
