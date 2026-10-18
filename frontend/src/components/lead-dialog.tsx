@@ -11,8 +11,8 @@ import { PackagePart } from "./package-part";
 import { PhoneInput } from "./phone-input";
 import { MessengerLinks } from "./messenger-links";
 import { close, useAppDispatch, useSelection } from "./store-provider";
-import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
-import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
+import { basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
+import { bookingOfferings, type BookingCatalog, type BookingCharacter } from "@/lib/booking-catalog";
 import { track, priceBand, submissionErrorReason } from "@/lib/analytics";
 import { FormJourney } from "@/lib/form-journey";
 import { createSubmissionKey } from "@/lib/submission-key";
@@ -23,7 +23,7 @@ import { bookingDraftKey, resumeBookingDraft } from "@/lib/booking-draft";
 import { fixedNewYearSlot } from "@/lib/enquiry-new-year-slots";
 import consent from "@/lib/lead-consent.json";
 
-const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
+const ordinaryHero = (hero: BookingCharacter) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
 const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
 function openMobileDateTimePicker(event: React.MouseEvent<HTMLInputElement>) {

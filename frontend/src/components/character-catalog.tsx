@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { matchesCharacterSearch } from "@/lib/character-search";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Character } from "@/lib/types";
+import { CharacterSummary } from "@/lib/types";
 import { CharacterCard } from "./cards";
 import { ChooseButton } from "./choose-button";
 import "./character-catalog.css";
@@ -24,7 +24,7 @@ const categoryRank = (name: string) => { const index = categoryOrder.indexOf(nam
 const heroRank = (slug: string) => { const index = firstHeroes.indexOf(slug); return index < 0 ? firstHeroes.length : index; };
 const popularityRank = (slug: string) => { const index = popularHeroes.indexOf(slug); return index < 0 ? popularHeroes.length : index; };
 type SortOrder = "category" | "popular" | "name";
-export function CharacterCatalog({ characters }: { characters: Character[] }) {
+export function CharacterCatalog({ characters }: { characters: CharacterSummary[] }) {
   const [category, setCategory] = useState("Все герои"), [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("category");
   const input = useRef<HTMLInputElement>(null);

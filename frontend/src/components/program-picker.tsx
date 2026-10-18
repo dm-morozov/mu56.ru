@@ -6,7 +6,7 @@ import styles from "./program-picker.module.css";
 
 const groups = [["animation", "Анимация"], ["transformer", "Большие герои"], ["seasonal", "Новый год"], ["package", "Готовые пакеты"], ["show", "Отдельные шоу"]];
 
-export function ProgramPicker({ offerings, value, onChange, label }: { offerings: Offering[]; value: string; onChange: (slug: string) => void; label: string }) {
+export function ProgramPicker({ offerings, value, onChange, label }: { offerings: readonly Pick<Offering, "slug" | "name" | "kind">[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId(), trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false), [active, setActive] = useState(0);
   const [keyboardNavigation, setKeyboardNavigation] = useState(false);

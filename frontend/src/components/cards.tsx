@@ -1,14 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Clock3, Mic2, Sparkles } from "lucide-react";
-import { Character, Offering, basePrice, duration, rubles } from "@/lib/types";
+import { type CharacterSummary, type Offering, basePrice, duration, rubles } from "@/lib/types";
 import { characterImage, characterIsPhoto, offeringUrl, packageImage } from "@/lib/images";
 import { ShowCard } from "./show-card";
 import { ChooseButton } from "./choose-button";
 import { packagePrice, packageTiming } from "@/lib/packages";
 import { PackageContents } from "./package-contents";
 
-export function CharacterCard({ character, index = 0, headingLevel = 3 }: { character: Character; index?: number; headingLevel?: 2 | 3 }) {
+export function CharacterCard({ character, index = 0, headingLevel = 3 }: { character: CharacterSummary; index?: number; headingLevel?: 2 | 3 }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const src = characterImage(character.slug);
   const host = character.slug === "graduation-host";

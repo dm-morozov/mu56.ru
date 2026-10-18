@@ -2,10 +2,10 @@
 
 import { useId, useState } from "react";
 import { Clock3, Info } from "lucide-react";
-import { Offering, duration } from "@/lib/types";
+import { type Offering, duration } from "@/lib/types";
 
 export function ShowAddon({ show, checked, onChange, price, performers, disabled = false }: {
-  show: Offering;
+  show: Pick<Offering, "slug" | "name" | "description" | "duration_minutes" | "duration_is_approximate">;
   checked: boolean;
   onChange: (checked: boolean) => void;
   price?: string;

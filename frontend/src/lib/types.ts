@@ -1,11 +1,13 @@
 export type CharacterPhoto = { url: string; alt: string; position: number; thumbnailPosition?: string };
 export type Character = { slug: string; name: string; category: string; description: string; availability: string; availability_label: string; photos: CharacterPhoto[] };
+// Shared by the catalogue cards and booking form; detail pages keep Character.
+export type CharacterSummary = Pick<Character, "slug" | "name" | "category" | "availability">;
 export type Price = { code: string; label: string; context: string; amount_rub: number; duration_minutes: number | null };
 export type Part = { position: number; title: string; duration_minutes: number; is_approximate: boolean; led_by_performer: boolean; service_slug: string | null };
 export type Offering = { slug: string; name: string; kind: string; service_position: number | null; description: string; duration_minutes: number | null; duration_is_approximate: boolean; included_performers: number; availability: string; availability_label: string; requirements: string; prices: Price[]; characters: Character[]; parts: Part[] };
 export const rubles = (amount: number) => new Intl.NumberFormat("ru-RU").format(amount) + " ₽";
-export const basePrice = (item: Offering) => item.prices.find(p => p.context === "base")?.amount_rub;
-export const twoPerformerShowPrice = (show: Offering) => {
+export const basePrice = (item: Pick<Offering, "prices">) => item.prices.find(p => p.context === "base")?.amount_rub;
+export const twoPerformerShowPrice = (show: Pick<Offering, "prices">) => {
   const addon = show.prices.find(p => p.context === "with_animation");
   const support = show.prices.find(p => p.context === "transformer_support");
   return addon && support ? addon.amount_rub + support.amount_rub : undefined;
