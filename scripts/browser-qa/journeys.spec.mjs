@@ -109,6 +109,8 @@ test('home consent, programme discovery and menu recovery', async ({ page }, inf
   // Locate the factual card independently of decorative home copy.
   const animator = page.getByRole('navigation', { name: 'Направления праздников' }).getByRole('link', { name: /Аниматоры/ });
   expect((await animator.innerText()).replace(/\s/g, '')).toContain('3500₽');
+  await page.locator('#home-services').scrollIntoViewIfNeeded();
+  await capture(page, info, 'home-programme-navigation');
   await expect(page.locator('main a[href="/transformers/bumblebee"]').first()).toBeAttached();
   if (page.viewportSize().width <= 800) {
     const menu = page.getByRole('button', { name: 'Открыть меню', exact: true });
@@ -160,6 +162,8 @@ test('package enquiry stays recoverable through a long form', async ({ page }, i
   await dismissAnalytics(page);
   await noOverflow(page);
   await capture(page, info, 'packages');
+  await page.locator('.comparison-scroll').scrollIntoViewIfNeeded();
+  await capture(page, info, 'package-comparison');
   const trigger = page.getByRole('button', { name: /^Выбрать пакет «/ }).first();
   await trigger.click();
   const dialog = page.getByRole('dialog');
