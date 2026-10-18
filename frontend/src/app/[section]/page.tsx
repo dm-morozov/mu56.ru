@@ -9,13 +9,13 @@ import { ProgramQuestions } from "@/components/program-questions";
 
 import { sortPackages } from "@/lib/packages";
 import { pageMetadata } from "@/lib/seo";
-const sections: Record<string, { kind: string; title: string; description: string; eyebrow: string }> = {
+const sections: Record<string, { kind: string; title: string; description: string; searchDescription?: string; eyebrow: string }> = {
   transformers: { kind: "transformer", title: "Трансформеры на праздник в Оренбурге", eyebrow: "Большие герои — большие впечатления", description: "Бамблби, Оптимус или Железный человек вместе со вторым супергероем на выбор. Час игр, общения и фотографий на вашей площадке в Оренбурге. Сравните реальные костюмы, цены и условия." },
-  packages: { kind: "package", title: "Пакеты детских праздников в Оренбурге", eyebrow: "Праздник уже собран", description: "Анимация с любимым героем и шоу на вашей площадке в Оренбурге. Сравните состав, время с ведущим и цены пяти пакетов. Музыка после программы — фоновая, пока команда собирает оборудование." },
+  packages: { kind: "package", title: "Пакеты детских праздников в Оренбурге", eyebrow: "Праздник уже собран", description: "Анимация с любимым героем и шоу на вашей площадке в Оренбурге. Сравните состав, время с ведущим и цены пяти пакетов. Музыка после программы — фоновая, пока команда собирает оборудование.", searchDescription: "Пять пакетов с аниматором и шоу в Оренбурге. Сравните состав, цены и время игр с ведущим. Фоновая музыка после программы показана отдельно." },
   shows: { kind: "show", title: "Услуги для детских праздников в Оренбурге", eyebrow: "Выберите программу и дополнения", description: "Анимация, шоу, новогодние поздравления, фотосъёмка и звук в Оренбурге. Выберите любимого героя и добавьте впечатлений — состав и цену покажем в конструкторе." },
   extras: { kind: "extra", title: "Маленькие детали большого праздника", eyebrow: "Дополнения к празднику", description: "Фотограф, аквагрим, пиньята, сахарная вата с оператором и дополнительный звук. Некоторые услуги могут идти параллельно основной программе." },
 };
-export async function generateMetadata({ params }: { params: Promise<{ section: string }> }) { const { section } = await params; const info = sections[section]; if (!info) return {title: "Страница не найдена"}; const title = ({transformers:"Трансформеры на праздник в Оренбурге",packages:"Пакеты детских праздников в Оренбурге",shows:"Услуги для детских праздников",extras:"Дополнения к празднику"} as Record<string,string>)[section]; return pageMetadata(title, info.description, `/${section}`); }
+export async function generateMetadata({ params }: { params: Promise<{ section: string }> }) { const { section } = await params; const info = sections[section]; if (!info) return {title: "Страница не найдена"}; const title = ({transformers:"Трансформеры на праздник в Оренбурге",packages:"Пакеты детских праздников в Оренбурге",shows:"Услуги для детских праздников",extras:"Дополнения к празднику"} as Record<string,string>)[section]; return pageMetadata(title, info.searchDescription || info.description, `/${section}`); }
 export default async function SectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params, info = sections[section]; if (!info) notFound();
   const allOfferings = await getOfferings();

@@ -22,5 +22,7 @@ export function offeringSearchDescription(item: Offering): string {
     : item.kind === "transformer"
       ? "Большой герой и второй персонаж в обычном костюме"
       : item.description;
-  return `${item.name} в Оренбурге. ${composition || "Выездная программа на вашей площадке"}. Состав и цены на странице; дату и выезд согласуем до праздника.`;
+  const content = composition.trim() || "Выездная программа на вашей площадке";
+  const sentence = /[.!?…]$/.test(content) ? content : `${content}.`;
+  return `${item.name} в Оренбурге. ${sentence} Состав и цены на странице; дату и выезд согласуем до праздника.`;
 }

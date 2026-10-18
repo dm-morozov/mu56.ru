@@ -10,7 +10,8 @@ import { SeasonalOffer } from "@/components/seasonal-offer";
 import { OccasionCards } from "@/components/occasion-cards";
 import { ChooseButton } from "@/components/choose-button";
 import { basePrice, rubles } from "@/lib/types";
-import { absoluteUrl, siteOpenGraph } from "@/lib/seo";
+import { absoluteUrl, siteOpenGraph, website } from "@/lib/seo";
+import { StructuredData } from "@/components/structured-data";
 
 import { getReviews, getArticles } from "@/lib/editorial";
 import { homeArticles } from "@/lib/home-articles";
@@ -29,6 +30,7 @@ export default async function Home() {
   const featuredPackages = ["full-party", "sweet-vibe", "ice-breath"].flatMap(slug => offerings.filter(item => item.slug === slug));
   const featuredCharacters = ["spider-man", "tiktok", "captain-america", "chase"].flatMap(slug => characters.filter(item => item.slug === slug));
   return <main id="main">
+    <StructuredData data={website} />
     <section className="hero container">
       <div className="hero-copy"><span className="eyebrow"><span className="tiny-star">✳</span> Аниматоры и шоу в Оренбурге</span><h1>Праздник,<br />который дети<br /><span>не забудут.</span></h1><p>Любимые герои, настоящие трансформеры<br className="desktop-break" /> и шоу, от которых горят глаза.<br className="desktop-break" /> Приедем и устроим всё на вашей площадке.</p><div className="hero-actions"><ChooseButton>Подобрать праздник</ChooseButton><Link className="text-link" href="#home-services">Все программы <ArrowUpRight size={18} /></Link></div><div className="hero-messengers"><span>Удобнее написать?</span><MessengerLinks /></div><div className="hero-guarantee"><span><ShieldCheck size={21} /></span><div><strong>Оплата после праздника</strong><p>Не понравится — можете не платить.</p></div></div></div>
       <div className="hero-art"><span className="hero-spark" aria-hidden="true">✳</span><div className="hero-photo"><HomeHeroImage /><div className="photo-label"><i /> Вот ради этих глаз — всё и затеваем</div></div><div className="hero-sticker"><span>Осторожно:</span><strong>будет<br />восторг!</strong><Sparkles size={19} /></div><Link href={bumblebee ? "/transformers/bumblebee" : "/transformers"} className="hero-offer"><div><span>Бамблби + супергерой</span><strong>{bumblebee && basePrice(bumblebee) ? rubles(basePrice(bumblebee)!) : "Уточнить цену"} <small>/ 1 час</small></strong></div><span className="offer-arrow"><ArrowUpRight size={24} /></span></Link></div>

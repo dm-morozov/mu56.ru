@@ -9,6 +9,7 @@ require('node:module').registerHooks({ resolve(specifier, context, nextResolve) 
   }
 } });
 const seo = require('../frontend/src/lib/seo.ts');
+const { offeringSearchDescription } = require('../frontend/src/lib/offering-seo.ts');
 const result = seo.sitemapEntries(
   [{slug:'spider-man'}, {slug:'bumblebee'}, {slug:'new-year-duo'}],
   [{kind:'animation',slug:'animation'}, {kind:'transformer',slug:'bumblebee'}, {kind:'seasonal',slug:'new-year'}, {kind:'extra',slug:'sound'}],
@@ -26,6 +27,26 @@ assert(!urls.includes(seo.absoluteUrl('/characters/new-year-duo')));
 assert(!urls.some(url => url.includes('undefined') || url.includes('/privacy') || url.includes('/api/')));
 assert.equal(seo.characterCanonical('snegurochka'), '/new-year');
 assert.equal(seo.shortDescription(' a\n b '), 'a b');
+assert.equal(seo.shortDescription(' \n\t '), '');
+assert.equal(seo.shortDescription('а'.repeat(180)), 'а'.repeat(180));
+assert.equal(seo.shortDescription('а'.repeat(181)), `${'а'.repeat(179)}…`);
+assert.equal(seo.shortDescription(`${'Слово '.repeat(29)}оборудование и сборы`), `${'Слово '.repeat(29).trim()}…`);
+const completeWordBoundary = `${'а'.repeat(173)} слово`;
+assert.equal(seo.shortDescription(`${completeWordBoundary} дальше`), `${completeWordBoundary}…`);
+assert.equal(seo.shortDescription('🎉'.repeat(181)), `${'🎉'.repeat(179)}…`);
+assert.deepEqual(seo.website, {
+  '@context': 'https://schema.org', '@type': 'WebSite', '@id': seo.absoluteUrl('/#website'),
+  name: seo.organization.name, url: seo.absoluteUrl('/'),
+});
+assert(!('potentialAction' in seo.website));
+assert(!('aggregateRating' in seo.website));
+for (const ending of ['.', '!', '?', '…']) {
+  const description = offeringSearchDescription({ kind: 'extra', name: 'Услуга', description: `Описание${ending} \n` });
+  assert(description.includes(`Описание${ending} Состав`));
+  assert(!description.includes(`${ending}.`));
+}
+assert(offeringSearchDescription({ kind: 'show', name: 'Шоу', description: 'Описание' }).includes('Описание. Состав'));
+assert(offeringSearchDescription({ kind: 'extra', name: 'Услуга', description: ' \n' }).includes('Выездная программа на вашей площадке. Состав'));
 assert.deepEqual(seo.crawlerRules(false), [{userAgent:'*',disallow:'/'}]);
 const searchBot = seo.crawlerRules(true).find(r => r.userAgent === 'OAI-SearchBot');
 assert.equal(searchBot.allow, '/');
@@ -39,4 +60,4 @@ const payload = {name:'</script><script>alert(1)</script>'};
 const encoded = seo.serializeJsonLd(payload);
 assert(!encoded.includes('</script>'));
 assert.deepEqual(JSON.parse(encoded), payload);
-console.log('SEO checks passed: unique canonical URLs, sitemap exclusions, confirmed offers, safe JSON-LD.');
+console.log('SEO checks passed: unique canonical URLs, sitemap exclusions, readable Unicode snippets, factual site name, confirmed offers, safe JSON-LD.');

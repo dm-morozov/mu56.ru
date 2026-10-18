@@ -17,7 +17,10 @@ import { absoluteUrl, characterCanonical, pageMetadata } from "@/lib/seo";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params; const character = (await getCharacters()).find(c => c.slug === slug);
   if (!character) return {title:"Персонаж не найден"};
-  const metadata = pageMetadata(`Аниматор ${character.name} в Оренбурге`, `${character.name} на день рождения и детский праздник в Оренбурге. ${character.description.split("\n")[0]}`, characterCanonical(slug));
+  const description = slug === "spider-man"
+    ? "Аниматор Человек-паук на день рождения в Оренбурге. Игровая миссия, фотографии костюма, программа и стоимость. Выезд на вашу площадку."
+    : `${character.name} на день рождения и детский праздник в Оренбурге. ${character.description.split("\n")[0]}`;
+  const metadata = pageMetadata(`Аниматор ${character.name} в Оренбурге`, description, characterCanonical(slug));
   const image = characterImage(slug);
   if (image) metadata.openGraph.images = [{url:absoluteUrl(image),alt:character.name}];
   return metadata;

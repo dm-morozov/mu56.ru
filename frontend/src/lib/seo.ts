@@ -20,7 +20,16 @@ export const siteOpenGraph = {
 };
 export const servicePath = (kind: string, slug: string) => ({ animation: "/animators", transformer: `/transformers/${slug}`, package: `/packages/${slug}`, show: `/shows/${slug}`, extra: `/extras/${slug}`, seasonal: "/new-year" } as Record<string, string>)[kind];
 export const characterCanonical = (slug: string) => ["bumblebee", "optimus-prime", "iron-man"].includes(slug) ? `/transformers/${slug}` : ["ded-moroz", "snegurochka", "new-year-duo"].includes(slug) ? "/new-year" : `/characters/${slug}`;
-export const shortDescription = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 180);
+export function shortDescription(text: string) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const characters = Array.from(normalized);
+  if (characters.length <= 180) return normalized;
+  // Keep the existing compact snippet budget, without ending in half a word.
+  // Count Unicode code points so even an unusually long token stays valid text.
+  const prefix = characters.slice(0, 179).join("");
+  const boundary = characters[179] === " " ? prefix.length : prefix.lastIndexOf(" ");
+  return `${(boundary > 0 ? prefix.slice(0, boundary) : prefix).trimEnd()}…`;
+}
 export const serializeJsonLd = (data: unknown) => JSON.stringify(data).replace(/</g, "\\u003c");
 export function pageMetadata(title: string, description: string, path: string) {
   // Most titles already include the city; avoid the root template repeating it.
@@ -32,6 +41,10 @@ export const organization = {
   name: "Мир Улыбок", url: absoluteUrl("/"), telephone: "+79033922229",
   logo: absoluteUrl("/media/logo-kite.svg"), areaServed: { "@type": "City", name: "Оренбург" },
   sameAs: Object.values(contacts),
+};
+export const website = {
+  "@context": "https://schema.org", "@type": "WebSite", "@id": absoluteUrl("/#website"),
+  name: organization.name, url: absoluteUrl("/"),
 };
 export function serviceSchema(item: Offering, description: string) {
   const path = servicePath(item.kind, item.slug);
