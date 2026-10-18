@@ -21,6 +21,11 @@ cover homepage before/after dismissal, menu, search, packages/dialogs and the
 animator/Bumblebee landing pages. These are real browser screenshots but still
 need visual review; passing assertions alone is not a design sign-off. Chromium
 mobile emulation does not replace an iPhone Safari or Android device check.
+It also checks catalogue search/category/order and scroll restoration after
+Back/Forward, plus Back from an open hero enquiry without an overlay left on
+the catalogue. Explicitly reopening the same enquiry preserves its local draft.
+The seeded catalogue is checked for exact business-field/compatibility retention
+and the four-field hero projection before the browser suite.
 Chrome's sandbox stays enabled. The runner's existing Chrome installation and
 OS sandbox profile are used; no AppArmor, user namespace or permission setting
 is changed. Downloaded developer Chromium builds can fail under Ubuntu 24's

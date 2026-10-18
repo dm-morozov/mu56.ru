@@ -157,6 +157,73 @@ test('character search, empty results and focus recovery', async ({ page }, info
   await noOverflow(page);
 });
 
+test('catalogue comparison context survives Back and Forward', async ({ page }, info) => {
+  await page.goto('/characters');
+  await dismissAnalytics(page);
+  const search = page.getByRole('searchbox', { name: 'Найти героя', exact: true });
+  const order = page.getByRole('combobox', { name: 'Порядок героев', exact: true });
+  await search.fill('паук');
+  await page.getByRole('button', { name: 'Супергерои', exact: true }).click();
+  await order.selectOption('name');
+  await expect(page.locator('#character-results .character-card')).toHaveCount(2);
+  await expect(page).toHaveURL(/\/characters$/);
+  const heroLink = page.getByRole('link', { name: 'Человек-паук', exact: true });
+  await heroLink.scrollIntoViewIfNeeded();
+  const catalogScroll = await page.evaluate(() => scrollY);
+  await heroLink.click();
+  await expect(page).toHaveURL(/\/characters\/spider-man$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/characters$/);
+  await expect(search).toHaveValue('паук');
+  await expect(order).toHaveValue('name');
+  await expect(page.getByRole('button', { name: 'Супергерои', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#character-results .character-card')).toHaveCount(2);
+  await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - catalogScroll), { message: 'Return to the same catalogue position' }).toBeLessThan(16);
+  await noOverflow(page);
+  await page.locator('.catalog-tools').scrollIntoViewIfNeeded();
+  await capture(page, info, 'catalogue-restored-after-back');
+  await page.goForward();
+  await expect(page).toHaveURL(/\/characters\/spider-man$/);
+  await page.goBack();
+  await expect(search).toHaveValue('паук');
+  await expect(order).toHaveValue('name');
+  await page.getByRole('button', { name: 'Сбросить фильтры', exact: true }).click();
+  await expect(search).toHaveValue('');
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Все герои', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#character-results .character-card')).toHaveCount(32);
+});
+
+test('Back dismisses idle enquiry without losing the same-entry draft', async ({ page }, info) => {
+  await page.goto('/characters');
+  await dismissAnalytics(page);
+  await page.getByRole('searchbox', { name: 'Найти героя', exact: true }).fill('паук');
+  await page.getByRole('link', { name: 'Человек-паук', exact: true }).click();
+  await expect(page).toHaveURL(/\/characters\/spider-man$/);
+  const trigger = page.getByRole('button', { name: 'Хочу этого героя', exact: true });
+  await trigger.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('combobox', { name: 'Герой анимации', exact: true })).toHaveValue('Человек-паук');
+  // This non-personal draft text remains local to the isolated browser. No POST.
+  await dialog.getByRole('textbox', { name: 'Пожелания (необязательно)', exact: true }).fill('Проверка восстановления выбора');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/characters$/);
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Найти героя', exact: true })).toHaveValue('паук');
+  await noOverflow(page);
+  await capture(page, info, 'catalogue-after-dialog-back');
+  await page.goForward();
+  await expect(page).toHaveURL(/\/characters\/spider-man$/);
+  await expect(dialog).not.toBeVisible();
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Пожелания (необязательно)', exact: true })).toHaveValue('Проверка восстановления выбора');
+  await expect(dialog.getByRole('combobox', { name: 'Герой анимации', exact: true })).toHaveValue('Человек-паук');
+  await (await visibleClose(page)).click();
+  await expect(trigger).toBeFocused();
+});
+
 test('package enquiry stays recoverable through a long form', async ({ page }, info) => {
   await page.goto('/packages');
   await dismissAnalytics(page);
