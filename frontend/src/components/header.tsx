@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Brand } from "./brand";
 import { MessengerLinks } from "./messenger-links";
 
-const links = [["/transformers", "Трансформеры"], ["/packages", "Пакеты"], ["/characters", "Персонажи"], ["/shows", "Услуги"], ["/new-year", "Новый год"]];
+const links = [["/transformers", "Трансформеры"], ["/animators", "Аниматоры"], ["/packages", "Пакеты"], ["/characters", "Персонажи"], ["/shows", "Все услуги"], ["/new-year", "Новый год"]];
 const moreLinks = [["/extras", "Дополнения"], ["/holidays", "Праздники для групп"], ["/gallery", "Фото праздников"], ["/reviews", "Отзывы"], ["/articles", "Идеи для праздника"], ["/contacts", "Контакты"]];
 export function Header() {
   const [open, setOpen] = useState(false);

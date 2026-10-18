@@ -9,6 +9,8 @@ backend/media/
 backend/staticfiles/
 tmp/
 .local/
+# Вложения чата служат диагностике, а не являются публичными файлами сайта.
+/.codex-remote-attachments/
 # Локальные отчёты проверок, дампы и закрытые ключи не входят в релиз.
 /output/
 *.dump

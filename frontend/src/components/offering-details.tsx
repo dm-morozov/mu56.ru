@@ -22,7 +22,6 @@ export function OfferingDetails({ offering, allOfferings, occasion }: { offering
     const condition = packageStageCondition(service);
     return condition && service ? [{ slug: service.slug, condition }] : [];
   }) : [];
-  const returnHref = occasion ? `/holidays/${occasion.slug}#program-${offering.slug}` : undefined;
   const extra = offering.kind === "extra" ? extraContent[offering.slug] : undefined;
   const image = packaged ? packageImage(offering.slug) : transformer ? characterImage(offering.slug) : offering.kind === "seasonal" ? characterImage("new-year-duo") : extra?.image || serviceImage(offering.slug);
   const addon = offering.prices.find(p => p.context === "with_animation");
@@ -44,7 +43,7 @@ export function OfferingDetails({ offering, allOfferings, occasion }: { offering
       {offering.kind === "seasonal" && <NewYearFormats offering={offering} />}
       {offering.kind === "show" && <><ChooseButton offering="animation" addons={[offering.slug]}>Добавить к анимации</ChooseButton><p className="muted">Шоу продлевает программу. Анимация оплачивается отдельно — состав и итог покажем в заявке.</p></>}
       {addonOnly && <p className="muted">Доступно только вместе с нашей программой праздника.</p>}
-      {!transformer && !occasion && <ChooseButton offering={addonOnly ? "animation" : offering.slug} addons={addonOnly ? [offering.slug] : undefined} className={offering.kind === "show" ? "button outline" : "button orange"}>{extra?.action || (addonOnly ? "Добавить к программе" : offering.kind === "show" ? "Заказать только шоу" : "Хочу эту программу")}</ChooseButton>}{returnHref && <Link href={returnHref} className="button orange">Выбрать пакет для группы</Link>}<p className="detail-terms"><ShieldCheck size={15} /> Оплата после праздника. Не понравится — можете не платить.<br />Удалённый выезд оплачивается отдельно, стоимость уточним по адресу.</p>
+      {!transformer && !occasion && <ChooseButton offering={addonOnly ? "animation" : offering.slug} addons={addonOnly ? [offering.slug] : undefined} className={offering.kind === "show" ? "button outline" : "button orange"}>{extra?.action || (addonOnly ? "Добавить к программе" : offering.kind === "show" ? "Заказать только шоу" : "Хочу эту программу")}</ChooseButton>}{occasion && <ChooseButton offering={offering.slug} addons={groupPrice.addonSound ? ["sound"] : undefined} soundRequired={occasion.soundRequired}>Выбрать пакет для группы</ChooseButton>}<p className="detail-terms"><ShieldCheck size={15} /> Оплата после праздника. Не понравится — можете не платить.<br />Удалённый выезд оплачивается отдельно, стоимость уточним по адресу.</p>
     </div>
       {transformer && <section className="transformer-extras" aria-labelledby="transformer-extras-title"><div className="section-head"><div><span className="eyebrow">Праздник с продолжением</span><h2 id="transformer-extras-title">Добавьте празднику <em>впечатлений</em></h2></div><p>После встречи с героями оба аниматора переоденутся и проведут шоу. Выберите добавку — продолжим в конструкторе.</p></div><ProgramExtras offering={offering} offerings={allOfferings} /></section>}
   </div>;

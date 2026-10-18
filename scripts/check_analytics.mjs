@@ -58,4 +58,44 @@ quoteJourney.close('close'); const closedCount=quoteEvents.length;
 quoteJourney.quoteError('network'); assert.equal(quoteEvents.length,closedCount);
 quoteJourney.open({}); quoteJourney.success(); const savedCount=quoteEvents.length;
 quoteJourney.quoteError('network'); assert.equal(quoteEvents.length,savedCount);
-console.log('Analytics: privacy, venue routes, consent/domain gating, error classification, quote-stage errors, retries, success deduplication and abandon/resume passed.');
+// A same-entry draft retains rendered state while the original CTA still
+// names ice-breath. Reopening must emit the restored composition immediately,
+// before any field change or a new quote response can trigger another update.
+let draftEvents=[];
+const draftJourney=new FormJourney((event,params)=>draftEvents.push({event,params}),()=>clock);
+const originalCta={program:'ice-breath',hero:'unknown',details:true};
+const restoredComposition={program:'sweet-vibe',hero:'harry-potter',kind:'package',addon_count:1,price_band:'5000_9999',details:false};
+draftJourney.open(originalCta);
+draftJourney.update(restoredComposition);
+draftJourney.close('close');
+draftJourney.open(originalCta,restoredComposition);
+assert.deepEqual(draftEvents.at(-1),{event:'form_open',params:restoredComposition});
+draftJourney.submit(); draftJourney.success();
+const restoredSuccess=draftEvents.at(-1);
+for(const [key,value] of Object.entries(restoredComposition)) assert.equal(restoredSuccess.params[key],value,key);
+assert.equal(restoredSuccess.params.attempt,1);
+assert.equal(restoredSuccess.params.started,false); // No invented edit/contact event on reopen.
+assert.equal(draftEvents.filter(x=>x.event==='form_start'||x.event==='contact_ready').length,0);
+draftJourney.close('close');
+// An animation draft may reopen before its quote has been fetched again.
+// Preserve its real program and addons, never reuse an old known price band.
+const waitingQuote={program:'animation',hero:'harry-potter',kind:'animation',addon_count:2,price_band:'unknown',details:true};
+draftJourney.open(originalCta,waitingQuote);
+draftJourney.quoteError('timeout');
+for(const [key,value] of Object.entries(waitingQuote)) assert.equal(draftEvents.at(-1).params[key],value,key);
+assert.equal(draftEvents.at(-1).params.attempt,0);
+draftJourney.update({price_band:'10000_14999'});
+draftJourney.invalid('data_consent');
+assert.equal(draftEvents.at(-1).params.price_band,'10000_14999');
+assert.equal(draftEvents.at(-1).params.program,'animation');
+draftJourney.close('close');
+draftJourney.open({program:'bumblebee',hero:'unknown',details:true});
+assert.deepEqual(draftEvents.at(-1).params,{program:'bumblebee',hero:'unknown',details:true});
+draftJourney.update({program:'bumblebee',hero:'unknown',kind:'transformer',addon_count:0,price_band:'unknown',details:true});
+draftJourney.update({price_band:'5000_9999'}); // Recalculation after open enriches subsequent events.
+draftJourney.error('network');
+assert.equal(draftEvents.at(-1).params.program,'bumblebee');
+assert.equal(draftEvents.at(-1).params.addon_count,0);
+assert.equal(draftEvents.at(-1).params.price_band,'5000_9999');
+assert.equal('phone' in draftEvents.at(-1).params,false);
+console.log('Analytics: privacy, consent/domain gating, quote errors, retries, success deduplication, abandon/resume and restored draft context passed.');

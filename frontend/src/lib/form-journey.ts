@@ -12,10 +12,10 @@ export class FormJourney {
   private context: AnalyticsParams = {};
   private fields = new Set<string>();
   constructor(private emit: (goal: Goal, params: AnalyticsParams) => unknown, private now = Date.now) {}
-  open(context: AnalyticsParams) {
+  open(context: AnalyticsParams, restoredContext?: AnalyticsParams) {
     this.opened = true; this.started = false; this.saved = false; this.phoneReady = false;
-    this.lastField = "unknown"; this.attempts = 0; this.openedAt = this.now(); this.context = context; this.fields.clear();
-    this.emit("form_open", context);
+    this.lastField = "unknown"; this.attempts = 0; this.openedAt = this.now(); this.context = { ...context, ...restoredContext }; this.fields.clear();
+    this.emit("form_open", this.context);
   }
   update(context: AnalyticsParams) { this.context = { ...this.context, ...context }; }
   private params(extra: AnalyticsParams = {}) { return { ...this.context, started: this.started, phone_ready: this.phoneReady, field: this.lastField, seconds: Math.floor((this.now() - this.openedAt) / 1000), attempt: this.attempts, ...extra }; }

@@ -17,7 +17,7 @@ const description = "Выездные аниматоры на день рожд�
 export const metadata = {
   ...pageMetadata("Аниматоры на день рождения в Оренбурге", description, "/animators"),
   openGraph: { ...pageMetadata("Аниматоры на день рождения в Оренбурге", description, "/animators").openGraph,
-    images: [{ url: absoluteUrl(characterImage("spider-man")!), alt: "Аниматор Человек-паук — Мир Улыбок" }] },
+    images: [{ url: absoluteUrl("/media/animation-spider-man-hug.webp"), alt: "Аниматор Человек-паук — Мир Улыбок" }] },
 };
 
 export default async function AnimatorsPage() {
@@ -29,7 +29,7 @@ export default async function AnimatorsPage() {
   const characters = favourites.flatMap(slug => animation.characters.filter(hero => hero.slug === slug));
   const packages = ["full-party", "ice-breath", "sweet-vibe"].flatMap(slug => offerings.filter(item => item.kind === "package" && item.slug === slug));
   const photos = ["spider-man", "ninja-turtle", "alice"].flatMap(slug => animation.characters.find(hero => hero.slug === slug)?.photos.slice(0, 1) || []);
-  const leadPhoto = photos[0];
+  const leadPhoto = { url: "/media/animation-spider-man-hug.webp", alt: "Ребёнок обнимает Человека-паука в новом костюме на празднике" };
 
   return <main id="main" className="animation-page">
     <StructuredData data={serviceSchema(animation, description)} />
@@ -40,11 +40,11 @@ export default async function AnimatorsPage() {
         <h1>Аниматоры на детский праздник <em>в Оренбурге</em></h1>
         <p>Пусть любимый герой станет частью дня рождения. Приедем на вашу площадку, познакомимся с детьми и увлечём их играми, заданиями и танцами.</p>
         <div className="animation-tariff"><strong>{price ? rubles(price) : "Стоимость уточним"}</strong><span>{duration(animation.duration_minutes)} · {animation.included_performers === 1 ? "один аниматор" : `${animation.included_performers} аниматора`} · герой на выбор</span></div>
-        <div className="hero-actions"><ChooseButton offering={animation.slug}>Обсудить праздник</ChooseButton><Link href="#heroes" className="button outline">Выбрать героя</Link></div>
+        <div className="hero-actions"><ChooseButton offering={animation.slug}>Обсудить праздник</ChooseButton><Link href="/characters" className="button outline">Выбрать героя</Link></div>
         <p className="animation-venue">Дома, в кафе, саду, школе, детской студии или на улице. Удалённый выезд рассчитываем отдельно.</p>
       </div>
       <div className="animation-hero-photo">
-        <Image src={leadPhoto?.url || characterImage("spider-man")!} alt={leadPhoto?.alt || "Аниматор Человек-паук"} width={800} height={900} sizes="(max-width: 680px) 100vw, 50vw" preload />
+        <Image src={leadPhoto?.url || characterImage("spider-man")!} alt={leadPhoto?.alt || "Аниматор Человек-паук"} width={1800} height={1200} sizes="(max-width: 680px) 100vw, 50vw" preload />
         <span className="animation-photo-label">Не просто встреча с героем.<br />Общее приключение!</span>
       </div>
     </section></div>

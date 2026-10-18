@@ -87,13 +87,23 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     ? monthDay !== expectedDay || eventTime !== expectedTime ? `Укажите дату и точное начало: ${eveningSlot}, по Оренбургу.` : ""
     : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const availableShows = offerings.filter(item => item.kind === "show" && item.prices.some(price => price.context === "with_animation") && item.prices.some(price => price.context === "transformer_support"));
+  const journeyContext = useMemo(() => ({
+    program: programSlug || "unknown", hero: heroSlug || "unknown", kind: program?.kind || "unknown",
+    addon_count: addons.length, price_band: priceBand(pricedComposition ? compositionTotal : simpleTotal), details: detailsOpen,
+  }), [programSlug, heroSlug, program?.kind, addons.length, pricedComposition, compositionTotal, simpleTotal, detailsOpen]);
   useEffect(() => {
-    if (selection.open) journey.current?.open({ program: selection.offering || "unknown", hero: selection.character || "unknown", details: !!(selection.offering || selection.character || selection.tariff || selection.addons?.length) });
+    if (selection.open) {
+      // This runs before the draft-entry effect below replaces a different CTA.
+      // On the same entry, rendered state already is the restored composition.
+      const restoring = resumeBookingDraft(draftEntry.current, bookingDraftKey(selection, window.location.pathname));
+      journey.current?.open({ program: selection.offering || "unknown", hero: selection.character || "unknown", details: !!(selection.offering || selection.character || selection.tariff || selection.addons?.length) }, restoring ? journeyContext : undefined);
+    }
     else journey.current?.close("close");
   }, [selection.open]);
   useEffect(() => {
-    journey.current?.update({ program: programSlug || "unknown", hero: heroSlug || "unknown", kind: program?.kind || "unknown", addon_count: addons.length, price_band: priceBand(pricedComposition ? compositionTotal : simpleTotal) });
-  }, [programSlug, heroSlug, program?.kind, addons.length, compositionTotal, pricedComposition, simpleTotal]);
+    // Reapply after every open even when the saved form has not changed.
+    journey.current?.update(journeyContext);
+  }, [selection.open, journeyContext]);
   useEffect(() => {
     const hide = () => journey.current?.close("pagehide");
     const show = () => { if (ref.current?.open) journey.current?.resume(); };
