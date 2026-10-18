@@ -64,7 +64,12 @@ async function noOverflow(page) {
 }
 async function dismissAnalytics(page) {
   const decline = page.getByRole('button', { name: 'Пока без аналитики', exact: true });
-  if (await decline.isVisible()) await decline.click();
+  const denied = await page.evaluate(() => localStorage.getItem('mu56-analytics-v1') === 'denied');
+  if (!denied) {
+    await expect(decline).toBeVisible();
+    await decline.click();
+  }
+  await expect(page.getByRole('complementary', { name: 'Настройки аналитики' })).toHaveCount(0);
 }
 async function visibleClose(page) {
   const close = page.getByRole('button', { name: 'Закрыть форму', exact: true });
@@ -135,12 +140,14 @@ test('character search, empty results and focus recovery', async ({ page }, info
     await noOverflow(page);
   }
   await search.fill('человек паук');
+  await page.locator('#character-results').scrollIntoViewIfNeeded();
   await capture(page, info, 'search-spider-results');
   await page.getByRole('button', { name: 'Очистить поиск', exact: true }).click();
   await expect(search).toBeFocused();
   await expect(search).toHaveValue('');
   await search.fill('несуществующий герой');
   await expect(page.getByRole('heading', { name: 'Такого героя пока не нашли' })).toBeVisible();
+  await page.locator('.empty-search').scrollIntoViewIfNeeded();
   await capture(page, info, 'search-empty-recovery');
   await page.getByRole('button', { name: 'Показать всех', exact: true }).click();
   await expect(search).toBeFocused();
