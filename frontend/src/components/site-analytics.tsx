@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ANALYTICS_CHOICE, METRIKA_ID, contactChannel, safePath, track } from "@/lib/analytics";
 import { useSelection } from "./store-provider";
+import styles from "./analytics-notice.module.css";
 
 function choice() { try { return localStorage.getItem(ANALYTICS_CHOICE); } catch { return null; } }
 const DISMISSED_UNTIL = "mu56-analytics-dismissed-until";
@@ -118,8 +119,11 @@ export function SiteAnalytics({ enabled }: { enabled: boolean }) {
     if (!accepted) stop(); setReady(accepted); setShow(false); setEditingSettings(false);
   }
   if (!show || selection.open || !safePath(pathname || "")) return null;
-  return <aside className="analytics-notice" aria-label="Настройки аналитики">
+  return <aside className={`analytics-notice ${styles.notice}`} aria-label="Настройки аналитики">
     <div className="analytics-notice-text"><p>С вашего согласия используем cookies и Яндекс.Метрику для статистики посещений и действий. <Link href="/privacy">Подробнее</Link></p></div>
-    <div className="analytics-notice-actions"><button type="button" className="button orange" onClick={() => choose(true)}>Согласен</button>{editingSettings && <button type="button" className="analytics-settings" onClick={() => choose(false)}>Отключить аналитику</button>}</div>
+    <div className={`analytics-notice-actions ${styles.actions}`}>
+      <button type="button" className="button orange" onClick={() => choose(true)}>Согласен</button>
+      <button type="button" className="button outline" onClick={() => choose(false)}>{editingSettings ? "Отключить аналитику" : "Пока без аналитики"}</button>
+    </div>
   </aside>;
 }

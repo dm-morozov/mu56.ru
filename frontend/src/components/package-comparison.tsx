@@ -34,7 +34,7 @@ export function PackageComparison({ packages }: { packages: Offering[] }) {
         <tr><th scope="row">Комплект мощного звука с двумя микрофонами</th>{summaries.map(({ item }) => <td key={item.slug}>{packagePrice(item, [], true).addonSound ? "Добавляется при необходимости" : "Включён в цену"}</td>)}</tr>
         <tr><th scope="row">Добавить второго аниматора</th>{summaries.map(({ item, extra }) => <td key={item.slug}>{extra ? `+ ${rubles(extra.amount_rub)}` : "Обсудим состав"}</td>)}</tr>
         <tr className="comparison-idea"><th scope="row">Можно выбрать, если…</th>{summaries.map(({ item }) => <td key={item.slug}>{suggestions[item.slug] || "Вам нравится такой состав программы"}</td>)}</tr>
-        <tr><th scope="row">Обсудить дату и состав</th>{summaries.map(({ item }) => <td key={item.slug}><ChooseButton offering={item.slug} className={`button ${item.slug === "full-party" ? "orange" : "outline"}`}>Выбрать</ChooseButton></td>)}</tr>
+        <tr><th scope="row">Обсудить дату и состав</th>{summaries.map(({ item }) => <td key={item.slug}><ChooseButton ariaLabel={`Выбрать пакет «${item.name}»`} offering={item.slug} className={`button ${item.slug === "full-party" ? "orange" : "outline"}`}>Выбрать</ChooseButton></td>)}</tr>
       </tbody></table>
     </div>
     <div className="comparison-notes"><p><strong>Фоновая музыка — без ведущего.</strong> Она играет, пока команда собирает оборудование. После игр и шоу аниматоры уже не проводят программу.</p><p>Для большой группы состав команды и звук подбираем отдельно. Удалённый выезд и нестандартные дополнения согласуем до заказа. Время опытов и пенной программы ориентировочное.</p></div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { basePrice, duration, rubles, type Offering } from "@/lib/types";
 import "./home-service-navigation.css";
 
 const directions = [
@@ -11,7 +12,11 @@ const directions = [
   { href: "/holidays", title: "Для группы", detail: "Сад, школа, выпускной" },
 ];
 
-export function HomeServiceNavigation() {
+export function HomeServiceNavigation({ animation }: { animation?: Offering }) {
+  const animationPrice = animation ? basePrice(animation) : undefined;
+  const animationSummary = animation && animationPrice !== undefined
+    ? [animation.duration_minutes ? duration(animation.duration_minutes) : null, rubles(animationPrice)].filter(Boolean).join(" · ")
+    : null;
   return <section id="home-services" className="container home-service-navigation" aria-labelledby="home-service-navigation-title">
     <h2 id="home-service-navigation-title">Какой праздник вы ищете?</h2>
     <nav aria-label="Направления праздников">
@@ -21,6 +26,7 @@ export function HomeServiceNavigation() {
             <strong>{title}</strong>
             <span>{detail}</span>
             <ArrowUpRight size={17} aria-hidden="true" />
+            {href === "/animators" && animationSummary && <small className="home-service-price">{animationSummary} · за программу</small>}
           </Link>
         </li>)}
       </ul>

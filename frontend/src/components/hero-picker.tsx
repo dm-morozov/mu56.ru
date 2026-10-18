@@ -3,8 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import type { Character } from "@/lib/types";
-
-const normalize = (text: string) => text.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/[-–—]/g, " ").replace(/\s+/g, " ").trim();
+import { matchesCharacterSearch } from "@/lib/character-search";
 
 export function HeroPicker({ heroes, value, onChange, label }: { heroes: Character[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId();
@@ -15,8 +14,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const selected = heroes.find(hero => hero.slug === value);
-  const words = normalize(query).split(" ").filter(Boolean);
-  const filtered = heroes.filter(hero => words.every(word => normalize(hero.name).includes(word)));
+  const filtered = heroes.filter(hero => matchesCharacterSearch(hero.name, query));
   const options = [{ slug: "", name: "Согласуем позже", availability: "available" }, ...filtered];
   const activeIndex = Math.min(active, options.length - 1);
   function pick(slug: string) {
@@ -47,7 +45,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
       const bounds = dialog.getBoundingClientRect();
       const clientTop = dialog.clientTop;
       const clientHeight = dialog.clientHeight;
-      const visibleTop = Math.max(bounds.top + clientTop, viewportTop) + 12;
+      const visibleTop = Math.max(bounds.top + clientTop, viewportTop, dialog.querySelector(".lead-dialog-controls")?.getBoundingClientRect().bottom ?? 0) + 12;
       const visibleBottom = Math.min(bounds.top + clientTop + clientHeight, viewportBottom) - 12;
       const previousScroll = dialog.scrollTop;
       const nextScroll = Math.max(0, Math.min(dialog.scrollHeight - clientHeight, previousScroll + picker.getBoundingClientRect().top - visibleTop));

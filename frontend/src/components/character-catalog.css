@@ -1,0 +1,17 @@
+/* Keep filtering usable with touch, zoom and long category names. */
+.catalog-tools .catalog-search .search-wrap { padding: 3px 8px 3px 14px; }
+.catalog-search .search-wrap input { min-height: 44px; }
+/* Keep one clear action: the labelled button also restores input focus. */
+.catalog-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.catalog-search .search-wrap button { min-width: 44px; min-height: 44px; align-items: center; justify-content: center; color: var(--navy); border-radius: 8px; }
+.catalog-body .category-tabs button { min-height: 44px; }
+.catalog-results .catalog-count { white-space: normal; }
+.catalog-results .catalog-count svg { flex-shrink: 0; }
+.catalog-reset { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--navy); font-size: 12px; font-weight: 700; }
+.catalog-reset:hover { background: var(--cream); }
+.catalog-results .catalog-sort-note { flex-basis: 100%; }
+.catalog-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+@media (max-width: 600px) {
+  .catalog-search .search-wrap input, .catalog-tools .catalog-sort select { font-size: 16px; }
+  .catalog-empty-actions .button { width: 100%; }
+}

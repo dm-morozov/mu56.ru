@@ -126,6 +126,72 @@ jobs:
           node --experimental-transform-types scripts/check_booking_draft.mjs
           node --experimental-transform-types scripts/check_booking_quote.mjs
           node --experimental-transform-types scripts/check_booking_addon_transition.mjs
+      - name: Check isolated browser journeys
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BROWSER_QA_OUTPUT: ${{ runner.temp }}/mu56-browser-qa
+        run: |
+          npm ci --prefix scripts/browser-qa --no-audit --no-fund
+          google-chrome --version
+          python backend/manage.py seed_catalog
+          python backend/manage.py seed_character_content
+          python backend/manage.py seed_offering_content
+          python backend/manage.py seed_editorial
+          mkdir -p "$BROWSER_QA_OUTPUT"
+          python backend/manage.py runserver 127.0.0.1:8000 --noreload > "$BROWSER_QA_OUTPUT/backend.log" 2>&1 &
+          backend_pid=$!
+          SITE_INDEXING_ENABLED=true pnpm --dir frontend start --port 3100 > "$BROWSER_QA_OUTPUT/frontend.log" 2>&1 &
+          frontend_pid=$!
+          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3100/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then
+            cat "$BROWSER_QA_OUTPUT/backend.log" "$BROWSER_QA_OUTPUT/frontend.log"
+            exit 1
+          fi
+          npm --prefix scripts/browser-qa test
+      - name: Record public HTTPS diagnostics
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          evidence="$RUNNER_TEMP/mu56-browser-qa/public-https"
+          mkdir -p "$evidence"
+          curl --max-time 20 --connect-timeout 10 --silent --show-error \
+            --user-agent 'TelegramBot (like TwitterBot)' \
+            --dump-header "$evidence/headers.txt" --output "$evidence/home.html" \
+            --write-out 'http=%{http_code}\nremote_ip=%{remote_ip}\nssl_verify=%{ssl_verify_result}\nttfb=%{time_starttransfer}\ntotal=%{time_total}\n' \
+            https://mu56.ru/ > "$evidence/timing.txt" 2> "$evidence/curl-errors.txt" || true
+          tls_status=0
+          timeout 20 openssl s_client -connect mu56.ru:443 -servername mu56.ru \
+            -verify_return_error -verify_hostname mu56.ru -showcerts < /dev/null > "$evidence/tls.txt" 2>&1 || tls_status=$?
+          printf 'openssl_exit=%s\n' "$tls_status" >> "$evidence/tls.txt"
+          openssl x509 -in "$evidence/tls.txt" -noout -subject -issuer -dates \
+            -ext subjectAltName > "$evidence/certificate.txt" 2>&1 || true
+          for path in / /media/social-preview-20261008-v5.jpg; do
+            curl --max-time 20 --connect-timeout 10 --silent --show-error --output /dev/null \
+              --write-out 'url=%{url_effective} http=%{http_code} type=%{content_type} bytes=%{size_download} ssl_verify=%{ssl_verify_result} ttfb=%{time_starttransfer}\n' \
+              "https://mu56.ru$path" >> "$evidence/normal-get.txt" 2>&1 || true
+          done
+          if [ -f "$evidence/home.html" ]; then
+            grep -bo 'property="og:[^"]*"' "$evidence/home.html" > "$evidence/og-byte-offsets.txt" || true
+          fi
+      - name: Save browser QA evidence
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-qa-${{ github.sha }}
+          path: ${{ runner.temp }}/mu56-browser-qa/
+          include-hidden-files: false
+          if-no-files-found: warn
+          retention-days: 7
       - name: Build and publish pinned Docker images
         id: images
         if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006' && steps.changes.outputs.images == 'true'

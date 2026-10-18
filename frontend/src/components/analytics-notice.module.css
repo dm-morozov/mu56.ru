@@ -1,0 +1,21 @@
+.notice .actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .notice:global(.analytics-notice) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notice .actions {
+    justify-content: flex-end;
+  }
+
+  .notice .actions button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

@@ -15,6 +15,9 @@ export const socialPreviewImage: { url: string; alt: string; width?: number; hei
   type: "image/jpeg",
   alt: "Мир Улыбок — праздник, который дети не забудут. Аниматоры, трансформеры и шоу в Оренбурге.",
 };
+export const siteOpenGraph = {
+  locale: "ru_RU", type: "website" as const, siteName: "Мир Улыбок", images: [socialPreviewImage],
+};
 export const servicePath = (kind: string, slug: string) => ({ animation: "/animators", transformer: `/transformers/${slug}`, package: `/packages/${slug}`, show: `/shows/${slug}`, extra: `/extras/${slug}`, seasonal: "/new-year" } as Record<string, string>)[kind];
 export const characterCanonical = (slug: string) => ["bumblebee", "optimus-prime", "iron-man"].includes(slug) ? `/transformers/${slug}` : ["ded-moroz", "snegurochka", "new-year-duo"].includes(slug) ? "/new-year" : `/characters/${slug}`;
 export const shortDescription = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 180);
