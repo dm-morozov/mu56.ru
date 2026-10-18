@@ -10,12 +10,13 @@ import { SeasonalOffer } from "@/components/seasonal-offer";
 import { OccasionCards } from "@/components/occasion-cards";
 import { ChooseButton } from "@/components/choose-button";
 import { basePrice, rubles } from "@/lib/types";
+import { absoluteUrl, siteOpenGraph } from "@/lib/seo";
 
 import { getReviews, getArticles } from "@/lib/editorial";
 import { homeArticles } from "@/lib/home-articles";
 import { ReviewCards, ArticleCards } from "@/components/editorial-cards";
 
-export const metadata = { alternates: { canonical: "/" } };
+export const metadata = { alternates: { canonical: "/" }, openGraph: { ...siteOpenGraph, url: absoluteUrl("/") } };
 const homeTransformerDescriptions: Record<string, string> = {
   bumblebee: "Игры, знакомство и фотографии с большим Бамблби и вторым героем в обычном костюме на вашей площадке.",
   "iron-man": "Железный человек в большом костюме и второй герой в обычном костюме: игры, общение и фотографии с детьми.",
