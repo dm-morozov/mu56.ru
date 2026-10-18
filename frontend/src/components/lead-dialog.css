@@ -29,3 +29,14 @@
 .lead-dialog .lead-quote .lead-travel-note{display:grid;gap:4px;border-top:1px solid #142b3b24;margin-top:14px;padding-top:12px;line-height:1.6}
 .lead-travel-note strong{font-size:12px;color:var(--navy)}
 .lead-dialog .lead-fields>.lead-venue-interest{flex-direction:row;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:600}.lead-venue-interest input{margin-top:3px;flex-shrink:0}.lead-venue-interest small{display:block;margin-top:5px;color:var(--muted);font-size:11px;font-weight:400;line-height:1.5}
+
+/* Keep recovery actions next to their explanation and offer the existing contacts. */
+.lead-schedule-recovery p{margin:0 0 10px;line-height:1.6}
+.lead-dialog .lead-schedule-recovery .button{min-height:44px;padding:10px 14px;font-size:12px;text-align:left}
+.lead-submit-help{font-size:12px;line-height:1.6;color:var(--muted);margin:0 0 10px}
+.lead-contact-options{border-top:1px solid var(--line);margin-top:20px;padding-top:14px;text-align:center}
+.lead-contact-options>p{margin:0 0 6px;font-size:12px;color:var(--muted)}
+.lead-dialog .lead-contact-options .form-phone{margin:0;min-height:44px;font-size:12px;flex-wrap:wrap}
+.lead-contact-options .messenger-links{justify-content:center;flex-wrap:wrap;gap:8px 20px}
+.lead-contact-options>small{display:block;font-size:10px;line-height:1.6;color:var(--muted);margin-top:5px}
+.lead-dialog .field-optional{font-weight:500;color:var(--muted)}
