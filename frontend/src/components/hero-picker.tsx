@@ -45,7 +45,7 @@ export function HeroPicker({ heroes, value, onChange, label }: { heroes: Charact
       const bounds = dialog.getBoundingClientRect();
       const clientTop = dialog.clientTop;
       const clientHeight = dialog.clientHeight;
-      const visibleTop = Math.max(bounds.top + clientTop, viewportTop) + 12;
+      const visibleTop = Math.max(bounds.top + clientTop, viewportTop, dialog.querySelector(".lead-dialog-controls")?.getBoundingClientRect().bottom ?? 0) + 12;
       const visibleBottom = Math.min(bounds.top + clientTop + clientHeight, viewportBottom) - 12;
       const previousScroll = dialog.scrollTop;
       const nextScroll = Math.max(0, Math.min(dialog.scrollHeight - clientHeight, previousScroll + picker.getBoundingClientRect().top - visibleTop));

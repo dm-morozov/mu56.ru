@@ -1,5 +1,6 @@
 import type { Offering } from "@/lib/types";
 import { rubles } from "@/lib/types";
+import { fixedNewYearSlots } from "@/lib/enquiry-new-year-slots";
 import { ChooseButton } from "./choose-button";
 import { Clock3, UsersRound, AudioLines } from "lucide-react";
 import styles from "./topic-navigation.module.css";
@@ -9,7 +10,6 @@ const formats = [
   { code: "minutes-30", title: "Новогодние игры", text: "Знакомство и поздравление, 3–4 игры, стихи по желанию, вручение подарков и фотографии." },
   { code: "minutes-50", title: "Путешествие в Великий Устюг за подарками", text: "Полноценная интерактивная сказка: дети становятся участниками приключения, а тематический реквизит помогает погрузиться в историю." },
 ];
-const slots = [["eve-18", "31 декабря · 18:00"], ["eve-20", "31 декабря · 20:00"], ["eve-22", "31 декабря · 22:00"], ["night-00", "1 января · 00:00"], ["night-02", "1 января · 02:00"]];
 
 export function NewYearFormats({ offering }: { offering: Offering }) {
   const group = offering.prices.find(p => p.code === "group-with-sound");
@@ -53,6 +53,6 @@ export function NewYearFormats({ offering }: { offering: Offering }) {
         </ul>
       </div>
     </article>}
-    <section id="new-year-evening" className={`new-year-evening ${styles.target}`}><span className="eyebrow">Особенные часы</span><h3>31 декабря и новогодняя ночь</h3><p>Только интерактивная сказка на 50 минут. Время начала точное, по Оренбургу. Свободный выезд и маршрут подтвердим лично — это не календарь бронирования.</p><div className="new-year-slots">{slots.map(([code, label]) => { const price = offering.prices.find(p => p.code === code); return price && <div key={code}><span>{label}</span><strong>{rubles(price.amount_rub)}</strong><ChooseButton offering="new-year" tariff={code} className="button outline">Обсудить {label.split(" · ")[1]}</ChooseButton></div>; })}</div><p>Последнее начало — 1 января в 02:00. Короткие поздравления и программа для групп в эти часы недоступны.</p></section>
+    <section id="new-year-evening" className={`new-year-evening ${styles.target}`}><span className="eyebrow">Особенные часы</span><h3>31 декабря и новогодняя ночь</h3><p>Только интерактивная сказка на 50 минут. Время начала точное, по Оренбургу. Свободный выезд и маршрут подтвердим лично — это не календарь бронирования.</p><div className="new-year-slots">{fixedNewYearSlots.map(({code, label, time}) => { const price = offering.prices.find(p => p.code === code); return price && <div key={code}><span>{label}</span><strong>{rubles(price.amount_rub)}</strong><ChooseButton ariaLabel={`Обсудить ${time} · ${label.split(" · ")[0]}`} offering="new-year" tariff={code} className="button outline">Обсудить {time}</ChooseButton></div>; })}</div><p>Последнее начало — 1 января в 02:00. Короткие поздравления и программа для групп в эти часы недоступны.</p></section>
   </div>;
 }

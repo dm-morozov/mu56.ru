@@ -20,10 +20,10 @@ import { bookingQuoteTotal, bookingQuoteErrorInfo, requestBookingQuote, type Boo
 import { compatibleBookingAddons } from "@/lib/booking-addon-transition";
 import { bookingVenues } from "@/lib/booking-venue";
 import { bookingDraftKey, resumeBookingDraft } from "@/lib/booking-draft";
+import { fixedNewYearSlot } from "@/lib/enquiry-new-year-slots";
 import consent from "@/lib/lead-consent.json";
 
 const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
-const eveningSlots: Record<string, string> = {"eve-18":"31 декабря · 18:00", "eve-20":"31 декабря · 20:00", "eve-22":"31 декабря · 22:00", "night-00":"1 января · 00:00", "night-02":"1 января · 02:00"};
 const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
 function openMobileDateTimePicker(event: React.MouseEvent<HTMLInputElement>) {
@@ -81,14 +81,14 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
   const showsKnown = seasonalShows.every(show => twoPerformerShowPrice(show) !== undefined);
   const allAddonsPriced = addons.every(slug => addonOnly(slug) || seasonalShows.some(show => show.slug === slug));
   const simpleTotal = simpleBase !== undefined && extrasKnown && showsKnown && allAddonsPriced ? simpleBase + extraAmount + seasonalShowAmount : undefined;
-  const eveningSlot = eveningSlots[tariffCode];
+  const eveningSlot = fixedNewYearSlot(tariffCode);
   const scheduleRequired = program?.kind === "seasonal" && !!eveningSlot;
   const monthDay = eventDate.slice(5);
   const specialNight = monthDay === "12-31" && (!eventTime || eventTime >= "18:00") || monthDay === "01-01" && (!eventTime || eventTime <= "04:00");
-  const expectedDay = tariffCode.startsWith("eve-") ? "12-31" : "01-01";
-  const expectedTime = `${tariffCode.slice(-2)}:00`;
+  const expectedDay = eveningSlot?.monthDay;
+  const expectedTime = eveningSlot?.time;
   const scheduleError = program?.kind !== "seasonal" ? "" : eveningSlot
-    ? monthDay !== expectedDay || eventTime !== expectedTime ? `Укажите дату и точное начало: ${eveningSlot}, по Оренбургу.` : ""
+    ? monthDay !== expectedDay || eventTime !== expectedTime ? `Укажите дату и точное начало: ${eveningSlot.label}, по Оренбургу.` : ""
     : specialNight ? "В эти часы выберите вечерний тариф на 50 минут и соответствующее ему точное время. Последнее начало — 1 января в 02:00." : "";
   const submitHelp = scheduleError ? "Для отправки проверьте дату, время и новогодний тариф."
     : pricedComposition && !quote ? quoteError ? "Для отправки нужен расчёт стоимости. Повторите расчёт выше или свяжитесь с нами напрямую." : "Кнопка отправки станет доступна после расчёта стоимости." : "";
@@ -133,7 +133,8 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
         // Remount uncontrolled fields (including PhoneInput's formatting state)
         // only for a new entry. Same-entry reopen keeps all fields in memory.
         setFormRevision(value => value + 1);
-        setEventDate(""); setEventTime("");
+        const initialSlot = offerings.find(item => item.slug === selection.offering)?.kind === "seasonal" ? fixedNewYearSlot(selection.tariff) : undefined;
+        setEventDate(""); setEventTime(initialSlot?.time || "");
         setSelectedVenue(selection.venue);
         setDetailsOpen(!!(selection.offering || selection.character || selection.tariff || selection.addons?.length));
         setSuccess(false); setError(""); setSecondPerformer(false); setSecondHeroSlug("");
@@ -144,7 +145,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
       ref.current?.showModal();
     }
     else ref.current?.close();
-  }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons, selection.soundRequired, selection.venue]);
+  }, [selection.open, selection.offering, selection.character, selection.tariff, selection.addons, selection.soundRequired, selection.venue, offerings]);
   useEffect(() => {
     setQuote(null); setQuoteError("");
     if (!selection.open || !pricedComposition) return;
@@ -226,7 +227,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     const bounds = event.currentTarget.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dispatch(close());
   }}>
-    <button className="dialog-close" aria-label="Закрыть форму" disabled={busy} onClick={() => dispatch(close())}><X /></button>
+    <div className="lead-dialog-controls"><button type="button" className="dialog-close" aria-label="Закрыть форму" disabled={busy} onClick={() => dispatch(close())}><X aria-hidden="true" /></button></div>
     {success ? <div className="form-success"><span><Check /></span><h2 id="lead-success-title" ref={successRef} tabIndex={-1}>Первый шаг к празднику сделан!</h2><p>Заявка сохранена. Обсудим с вами дату, программу и выезд.</p><button className="button orange" onClick={() => dispatch(close())}>Отлично</button></div> : <>
       <span className="eyebrow">Давайте устроим праздник</span><h2 id="lead-title">Расскажите о вашей идее</h2><p className="muted">{detailsOpen ? "Выберите состав праздника. Дату и детали согласуем с вами." : "Оставьте телефон — поможем выбрать программу. Дату и героя можно решить вместе."}</p>
       <form key={formRevision} className="ym-disable-keys" aria-busy={busy} onSubmit={submit} onChange={changed} onFocusCapture={event => journey.current?.focus(fieldName(event.target))} onInvalidCapture={event => journey.current?.invalid(fieldName(event.target))}>
@@ -256,7 +257,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
           <fieldset className="lead-addons"><legend>Добавить шоу</legend><p>Можно выбрать несколько. {transformer ? "Шоу ведут два аниматора в специальных костюмах. Их работа включена в доплату." : "Шоу продлевают праздник. Анимация оплачивается один раз."}</p>{animation && addons.includes("foam") && <p>Комплект звука уже включён в пенную вечеринку.</p>}{(animation ? offerings.filter(item => item.kind === "show") : availableShows).map(show => { const amount = show.slug === "sound" ? basePrice(show) : animation ? (show.prices.find(price => price.context === "with_animation")?.amount_rub ?? basePrice(show)) : show.prices.filter(price => ["with_animation", "transformer_support"].includes(price.context)).reduce((sum,price) => sum + price.amount_rub,0); return <ShowAddon key={`${programSlug}-${show.slug}`} show={show} checked={addons.includes(show.slug)} onChange={checked => { setQuote(null); setAddons(current => checked ? [...current.filter(slug => show.slug !== "foam" || slug !== "sound"),show.slug] : current.filter(slug => slug !== show.slug)); }} performers={transformer && show.kind === "show" ? 2 : undefined} price={`${amount === undefined ? "Цену уточним" : `+ ${rubles(amount)}`}`} />; })}</fieldset>
 
         </>}
-        {program?.kind === "seasonal" && <label>Формат новогоднего поздравления<select value={tariffCode} onChange={event => { setTariffCode(event.target.value); if (eveningSlots[event.target.value]) setAddons(current => current.filter(addonOnly)); }}><option value="">Помогите выбрать</option>{program.prices.map(price => <option key={price.code} value={price.code}>{eveningSlots[price.code] ? `${eveningSlots[price.code]} · 50 минут` : price.code === "group-with-sound" ? "Час и комплект звука" : `${price.duration_minutes} минут · два героя`} — {rubles(price.amount_rub)}</option>)}</select></label>}
+        {program?.kind === "seasonal" && <label>Формат новогоднего поздравления<select value={tariffCode} onChange={event => { setTariffCode(event.target.value); const slot = fixedNewYearSlot(event.target.value); if (slot) { setEventTime(slot.time); setAddons(current => current.filter(addonOnly)); } }}><option value="">Помогите выбрать</option>{program.prices.map(price => { const slot = fixedNewYearSlot(price.code); return <option key={price.code} value={price.code}>{slot ? `${slot.label} · 50 минут` : price.code === "group-with-sound" ? "Час и комплект звука" : `${price.duration_minutes} минут · два героя`} — {rubles(price.amount_rub)}</option>; })}</select></label>}
         {program?.kind === "seasonal" && <p className="hero-picker-help">Подарки передают родители. 31 декабря с 18:00 и новогодней ночью — только сказка на 50 минут по точным часам. Для вечернего тарифа укажите дату и время начала, соответствующие его названию. Свободный выезд подтвердим лично.</p>}
         {program?.kind === "seasonal" && !eveningSlot && <fieldset className="lead-addons"><legend>Продолжить новогодний праздник</legend><p>После поздравления оба аниматора переодеваются в специальные костюмы и проводят выбранное шоу вдвоём. Работа двух аниматоров включена в доплату.</p>{offerings.filter(show => ["nitrogen", "silver", "cotton-candy-show"].includes(show.slug)).map(show => <ShowAddon key={`${programSlug}-${show.slug}`} show={show} performers={2} price={twoPerformerShowPrice(show) === undefined ? "Цену уточним" : `+ ${rubles(twoPerformerShowPrice(show)!)}`} checked={addons.includes(show.slug)} onChange={checked => setAddons(current => checked ? [...current, show.slug] : current.filter(slug => slug !== show.slug))} />)}</fieldset>}
         {program?.kind === "show" && <p className="hero-picker-help">Анимация в этот вариант не входит. Если нужен герой и игры, выберите программу «Аниматор на праздник» и отметьте шоу.</p>}

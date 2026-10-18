@@ -54,6 +54,14 @@
   color: var(--orange-ink);
 }
 
+.home-service-navigation-link .home-service-price {
+  grid-column: 1 / -1;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .home-service-navigation-link:focus-visible {
   outline: 3px solid var(--orange-ink);
   outline-offset: 3px;

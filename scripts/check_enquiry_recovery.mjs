@@ -14,7 +14,7 @@ const frontend = createRequire(resolve(root, 'frontend/package.json'));
 const work = resolve(root, '.local/enquiry-tests');
 await mkdir(work, { recursive: true });
 const result = await build({
-  stdin: { contents: `export { LeadDialog } from './src/components/lead-dialog'; export { StoreProvider, choose, close, useAppDispatch } from './src/components/store-provider'; export { bookingCatalog } from './src/lib/booking-catalog'; export { messengers } from './src/lib/contacts'; export { contactChannel } from './src/lib/analytics';`, resolveDir: resolve(root, 'frontend'), loader: 'tsx' },
+  stdin: { contents: `export { LeadDialog } from './src/components/lead-dialog'; export { HeroPicker } from './src/components/hero-picker'; export { StoreProvider, choose, close, useAppDispatch } from './src/components/store-provider'; export { bookingCatalog } from './src/lib/booking-catalog'; export { messengers } from './src/lib/contacts'; export { contactChannel } from './src/lib/analytics'; export { fixedNewYearSlots, fixedNewYearSlot } from './src/lib/enquiry-new-year-slots';`, resolveDir: resolve(root, 'frontend'), loader: 'tsx' },
   bundle: true, write: false, format: 'cjs', platform: 'node', jsx: 'automatic',
   tsconfig: resolve(root, 'frontend/tsconfig.json'),
   plugins: [{ name: 'enquiry-framework-stubs', setup(builder) {
@@ -38,11 +38,11 @@ HTMLDialogElement.prototype.close = function () { this.open = false; };
 
 const { createElement, act } = frontend('react');
 const { createRoot } = frontend('react-dom/client');
-const { LeadDialog, StoreProvider, choose, close, useAppDispatch, bookingCatalog, messengers, contactChannel } = frontend(bundle);
+const { LeadDialog, HeroPicker, StoreProvider, choose, close, useAppDispatch, bookingCatalog, messengers, contactChannel, fixedNewYearSlots, fixedNewYearSlot } = frontend(bundle);
 const fixture = (slug, kind, prices = []) => ({ slug, name: `Тест ${slug}`, kind, service_position: null, description: '', duration_minutes: 60, duration_is_approximate: false, included_performers: 1, availability: '', availability_label: '', requirements: '', prices, characters: [], parts: [] });
 const catalog = bookingCatalog([
   fixture('animation', 'animation'),
-  fixture('new-year', 'seasonal', [{ code: 'eve-18', label: '', context: 'base', amount_rub: 10000, duration_minutes: 50 }]),
+  fixture('new-year', 'seasonal', [...fixedNewYearSlots.map(({ code }) => ({ code, label: '', context: 'base', amount_rub: 10000, duration_minutes: 50 })), { code: 'minutes-30', label: '', context: 'base', amount_rub: 3000, duration_minutes: 30 }, { code: 'eve-19', label: '', context: 'base', amount_rub: 10000, duration_minutes: 50 }]),
   fixture('test-package', 'package', [{ code: 'base', label: '', context: 'base', amount_rub: 5000, duration_minutes: 60 }]),
 ]);
 let dispatch;
@@ -71,11 +71,11 @@ const click = async selector => act(() => {
 });
 const open = async payload => act(() => dispatch(choose(payload)));
 const shut = async () => act(() => dispatch(close()));
-const value = async (name, next) => act(() => {
-  const input = field(name);
+const setValue = async (input, next) => act(() => {
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value').set.call(input, next);
   input.dispatchEvent(new Event(input.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
 });
+const value = (name, next) => setValue(field(name), next);
 const submit = async () => act(() => form().dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 const leads = () => calls.filter(call => call.url === '/api/v1/leads/');
 const deferred = () => { let resolvePromise; const promise = new Promise(resolve => { resolvePromise = resolve; }); return { promise, resolve: resolvePromise }; };
@@ -226,6 +226,74 @@ for (const name of ['event_date', 'event_time']) assert.match(field(name).closes
 assert.equal(submitButton().disabled, false);
 pass('Switching away from seasonal restores optional labels');
 
+assert.deepEqual(fixedNewYearSlots.map(({ code, label, monthDay, time }) => [code, label, monthDay, time]), [
+  ['eve-18', '31 декабря · 18:00', '12-31', '18:00'],
+  ['eve-20', '31 декабря · 20:00', '12-31', '20:00'],
+  ['eve-22', '31 декабря · 22:00', '12-31', '22:00'],
+  ['night-00', '1 января · 00:00', '01-01', '00:00'],
+  ['night-02', '1 января · 02:00', '01-01', '02:00'],
+]);
+await shut();
+await open({ offering: 'test-package' });
+for (const slot of fixedNewYearSlots) {
+  await shut();
+  await open({ offering: 'new-year', tariff: slot.code });
+  assert.equal(field('event_time').value, slot.time);
+  assert.equal(field('event_date').value, '');
+  assert.equal(submitButton().disabled, true, 'A seeded time must not bypass the date gate');
+}
+pass('All five exact tariff entries seed time only, with no inferred date/year');
+
+await shut();
+await open({ offering: 'new-year', tariff: 'eve-18' });
+await value('event_date', '2031-12-31');
+await value('event_time', '19:15');
+await value('name', 'Черновик точного времени');
+await click('.dialog-close');
+assert.equal(document.querySelector('dialog').open, false);
+await open({ offering: 'new-year', tariff: 'eve-18' });
+assert.equal(field('event_time').value, '19:15');
+assert.equal(field('event_date').value, '2031-12-31');
+assert.equal(field('name').value, 'Черновик точного времени');
+assert.equal(submitButton().disabled, true);
+const tariffSelect = () => document.querySelector('#lead-program-details select');
+await setValue(tariffSelect(), 'eve-20');
+assert.equal(field('event_time').value, '20:00');
+assert.equal(field('event_date').value, '2031-12-31');
+assert.equal(submitButton().disabled, false);
+await setValue(tariffSelect(), 'night-00');
+assert.equal(field('event_time').value, '00:00');
+assert.equal(field('event_date').value, '2031-12-31');
+assert.equal(submitButton().disabled, true, 'Switching to January must not silently rewrite the date');
+await value('event_date', '2032-01-01');
+assert.equal(submitButton().disabled, false);
+await setValue(tariffSelect(), 'minutes-30');
+assert.equal(field('event_time').value, '00:00');
+await value('event_time', '12:45');
+await setValue(tariffSelect(), 'eve-19');
+assert.equal(field('event_time').value, '12:45');
+assert.equal(field('event_date').value, '2032-01-01');
+await click('.dialog-close');
+await open({ offering: 'new-year', tariff: 'eve-18' });
+assert.equal(tariffSelect().value, 'eve-19');
+assert.equal(field('event_time').value, '12:45');
+assert.equal(field('event_date').value, '2032-01-01');
+pass('Fixed tariff switches seed exact time; edits, year and changed draft tariff survive reopen');
+
+for (const tariff of ['eve-19', 'minutes-30', 'missing-tariff', '']) {
+  await shut();
+  await open({ offering: 'new-year', tariff });
+  assert.equal(fixedNewYearSlot(tariff), undefined);
+  assert.equal(field('event_time').value, '');
+  assert.equal(field('event_date').value, '');
+}
+assert.equal(fixedNewYearSlot(undefined), undefined);
+await shut();
+await open({ offering: 'test-package', tariff: 'eve-18' });
+assert.equal(field('event_time').value, '');
+assert.equal(field('event_date').value, '');
+pass('Unknown/nonfixed tariffs and nonseasonal programs do not seed time');
+
 // Confirm every error/helper association points to a rendered element.
 for (const element of document.querySelectorAll('[aria-describedby]')) {
   for (const id of element.getAttribute('aria-describedby').split(/\s+/)) assert.ok(document.getElementById(id), `Missing description: ${id}`);
@@ -236,7 +304,65 @@ assert.match(css, /lead-contact-options \.form-phone\{[^}]*min-height:44px/);
 assert.match(css, /lead-contact-options \.messenger-links\{[^}]*flex-wrap:wrap/);
 pass('Description references and scoped touch/wrapping rules');
 
+const rail = document.querySelector('.lead-dialog-controls');
+assert.equal(document.querySelector('dialog').firstElementChild, rail);
+assert.equal(rail.contains(document.querySelector('.dialog-close')), true);
+assert.equal(rail.closest('form'), null);
+assert.match(css, /\.lead-dialog\{padding-top:0;scroll-padding-top:76px\}/);
+assert.match(css, /\.lead-dialog-controls\{position:sticky;top:0;z-index:3;[^}]*min-height:60px;[^}]*background:var\(--paper\)/);
+assert.match(css, /\.lead-dialog-controls \.dialog-close\{position:static;[^}]*width:44px;height:44px/);
+await value('name', 'Сохранить после Escape');
+const idleCancel = new Event('cancel', { cancelable: true });
+await act(() => document.querySelector('dialog').dispatchEvent(idleCancel));
+assert.equal(idleCancel.defaultPrevented, false);
+assert.equal(document.querySelector('dialog').open, false);
+await open({ offering: 'test-package', tariff: 'eve-18' });
+assert.equal(field('name').value, 'Сохранить после Escape');
+pass('Sticky close rail DOM/CSS contract and unchanged idle cancel/draft semantics');
+
 await act(() => host.unmount());
+
+// Exercise the real HeroPicker's reveal effect with supplied rectangles only.
+// jsdom does not calculate layout; these are arithmetic/occlusion checks.
+const geometryDialog = document.createElement('dialog');
+geometryDialog.open = true;
+geometryDialog.innerHTML = '<div class="lead-dialog-controls"></div><div id="geometry-picker"></div>';
+document.body.append(geometryDialog);
+Object.defineProperties(geometryDialog, { clientTop: { value: 2 }, clientHeight: { value: 500 }, scrollHeight: { value: 1600 } });
+geometryDialog.getBoundingClientRect = () => ({ top: 100 });
+geometryDialog.querySelector('.lead-dialog-controls').getBoundingClientRect = () => ({ bottom: 162 });
+const viewport = new dom.window.EventTarget();
+viewport.offsetTop = 0;
+viewport.height = 600;
+window.visualViewport = viewport;
+window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+const frames = [];
+globalThis.requestAnimationFrame = callback => { frames.push(callback); return frames.length; };
+globalThis.cancelAnimationFrame = () => {};
+const pickerHost = createRoot(document.getElementById('geometry-picker'));
+await act(() => pickerHost.render(createElement(HeroPicker, { heroes: [{ slug: 'test-hero', name: 'Тестовый герой', category: '', description: '', availability: 'available', availability_label: '', photos: [] }], value: '', onChange() {}, label: 'Проверочный герой' })));
+const picker = geometryDialog.querySelector('.hero-picker');
+picker.getBoundingClientRect = () => ({ top: 400 });
+await act(() => picker.querySelector('input').focus());
+picker.querySelector('.hero-picker-list').getBoundingClientRect = () => ({ top: 470, bottom: 600 });
+picker.querySelector('.hero-picker-results>p').getBoundingClientRect = () => ({ height: 24 });
+geometryDialog.scrollTop = 100;
+await act(() => frames.shift()());
+assert.equal(geometryDialog.scrollTop, 326); // 100 + 400 - (162 + 12)
+assert.equal(picker.style.getPropertyValue('--hero-list-height'), '264px');
+viewport.offsetTop = 250;
+geometryDialog.scrollTop = 100;
+await act(() => viewport.dispatchEvent(new Event('resize')));
+assert.equal(geometryDialog.scrollTop, 238); // Viewport top is now below the rail.
+assert.equal(picker.style.getPropertyValue('--hero-list-height'), '234px');
+viewport.offsetTop = 0;
+geometryDialog.querySelector('.lead-dialog-controls').remove();
+geometryDialog.scrollTop = 100;
+await act(() => window.dispatchEvent(new Event('resize')));
+assert.equal(geometryDialog.scrollTop, 386); // No rail: original dialog inset.
+await act(() => pickerHost.unmount());
+geometryDialog.remove();
+pass('Mobile hero reveal arithmetic respects sticky rail, viewport and absent-rail fallback');
 dom.window.close();
 console.log(`${checks.length} enquiry recovery scenarios passed (React + jsdom; all requests mocked).`);
 for (const label of checks) console.log(`- ${label}`);
