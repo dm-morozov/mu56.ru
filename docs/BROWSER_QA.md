@@ -30,6 +30,12 @@ Artifacts contain only screenshots, test results, and isolated-server logs.
 GitHub retains them for seven days. Traces are kept only for failed tests.
 Workflow permissions and production deployment gates are unchanged.
 
+A separate non-blocking PR diagnostic records public homepage HTTPS headers,
+TLS certificate verification and timing from the runner to help investigate
+Telegram previews. It uses no authentication, sends no form, changes no server
+setting, and has short timeouts. These public responses are separate from the
+strictly loopback-only browser tests and are included in the same artifact.
+
 For a supported local test environment, start the migrated test backend on
 port 8000, build Next with `BACKEND_ORIGIN=http://127.0.0.1:8000`, then start
 Next on port 3100 with `SITE_INDEXING_ENABLED=true`. Install the locked test
