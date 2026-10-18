@@ -15,6 +15,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     browserName: 'chromium',
+    // Use the runner's installed Chrome with its existing OS sandbox profile.
+    channel: 'chrome',
     launchOptions: { chromiumSandbox: true },
     // This origin is intercepted in the fixture below; it never reaches production.
     baseURL: 'http://mu56.ru',

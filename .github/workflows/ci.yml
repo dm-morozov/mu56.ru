@@ -133,7 +133,7 @@ jobs:
           BROWSER_QA_OUTPUT: ${{ runner.temp }}/mu56-browser-qa
         run: |
           npm ci --prefix scripts/browser-qa --no-audit --no-fund
-          scripts/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+          google-chrome --version
           python backend/manage.py seed_catalog
           python backend/manage.py seed_character_content
           python backend/manage.py seed_offering_content
