@@ -11,8 +11,8 @@ import { PackagePart } from "./package-part";
 import { PhoneInput } from "./phone-input";
 import { MessengerLinks } from "./messenger-links";
 import { close, useAppDispatch, useSelection } from "./store-provider";
-import { Offering, basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
-import { bookingOfferings, type BookingCatalog } from "@/lib/booking-catalog";
+import { basePrice, duration, rubles, twoPerformerShowPrice } from "@/lib/types";
+import { bookingOfferings, type BookingCatalog, type BookingCharacter } from "@/lib/booking-catalog";
 import { track, priceBand, submissionErrorReason } from "@/lib/analytics";
 import { FormJourney } from "@/lib/form-journey";
 import { createSubmissionKey } from "@/lib/submission-key";
@@ -23,7 +23,7 @@ import { bookingDraftKey, resumeBookingDraft } from "@/lib/booking-draft";
 import { fixedNewYearSlot } from "@/lib/enquiry-new-year-slots";
 import consent from "@/lib/lead-consent.json";
 
-const ordinaryHero = (hero: Offering["characters"][number]) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
+const ordinaryHero = (hero: BookingCharacter) => !["bumblebee", "optimus-prime", "iron-man"].includes(hero.slug) && !["Большие герои", "Новый год"].includes(hero.category);
 const addonOnly = (slug: string) => ["sound", "photographer"].includes(slug);
 
 function openMobileDateTimePicker(event: React.MouseEvent<HTMLInputElement>) {
@@ -36,7 +36,7 @@ function openMobileDateTimePicker(event: React.MouseEvent<HTMLInputElement>) {
   }
 }
 
-export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
+export function LeadDialog({ catalog, onSubmissionStateChange }: { catalog: BookingCatalog; onSubmissionStateChange?: (pending: boolean) => void }) {
   const offerings = useMemo(() => bookingOfferings(catalog), [catalog]);
   const ref = useRef<HTMLDialogElement>(null);
   const journey = useRef<FormJourney | null>(null);
@@ -180,7 +180,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
     journey.current?.submit();
     let failureReason = "unknown", failureStatus = 0;
     let requestSent = false;
-    setBusy(true); setError("");
+    setBusy(true); onSubmissionStateChange?.(true); setError("");
     try {
       const csrf = await fetch("/api/v1/csrf/", { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(15000) });
       if (!csrf.ok) { failureReason = "csrf"; failureStatus = csrf.status; }
@@ -220,7 +220,7 @@ export function LeadDialog({ catalog }: { catalog: BookingCatalog }) {
           : "Не удалось связаться с сайтом. Проверьте интернет и попробуйте ещё раз или позвоните нам. Ваши данные остались в форме."
         : err instanceof Error ? err.message : "Не удалось отправить заявку. Ваши данные остались в форме.");
     }
-    finally { setBusy(false); }
+    finally { setBusy(false); onSubmissionStateChange?.(false); }
   }
   return <dialog ref={ref} className="lead-dialog" aria-labelledby={success ? "lead-success-title" : "lead-title"} onCancel={event => { if (busy) event.preventDefault(); else dispatch(close()); }} onClick={event => {
     if (event.target !== event.currentTarget || busy) return;

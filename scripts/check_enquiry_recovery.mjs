@@ -46,7 +46,8 @@ const catalog = bookingCatalog([
   fixture('test-package', 'package', [{ code: 'base', label: '', context: 'base', amount_rub: 5000, duration_minutes: 60 }]),
 ]);
 let dispatch;
-function Harness() { dispatch = useAppDispatch(); return createElement(LeadDialog, { catalog }); }
+const submissionStates = [];
+function Harness() { dispatch = useAppDispatch(); return createElement(LeadDialog, { catalog, onSubmissionStateChange: pending => submissionStates.push(pending) }); }
 const calls = [];
 let handler = async url => {
   if (url === '/api/v1/csrf/') return new Response(JSON.stringify({ csrf_token: 'isolated-test-token' }));
@@ -363,6 +364,10 @@ assert.equal(geometryDialog.scrollTop, 386); // No rail: original dialog inset.
 await act(() => pickerHost.unmount());
 geometryDialog.remove();
 pass('Mobile hero reveal arithmetic respects sticky rail, viewport and absent-rail fallback');
+assert.ok(submissionStates.length > 0, 'Submission lifecycle must report pending state');
+assert.equal(submissionStates.length % 2, 0);
+submissionStates.forEach((pending, index) => assert.equal(pending, index % 2 === 0, 'Each started attempt reports completion, including failures'));
+pass('Submission lifecycle informs navigation guard without hiding pending results');
 dom.window.close();
 console.log(`${checks.length} enquiry recovery scenarios passed (React + jsdom; all requests mocked).`);
 for (const label of checks) console.log(`- ${label}`);

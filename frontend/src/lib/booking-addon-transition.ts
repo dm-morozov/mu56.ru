@@ -1,12 +1,14 @@
 import type { Offering } from "./types";
 
+type AddonOffering = Pick<Offering, "slug" | "kind" | "availability" | "prices" | "parts">;
+
 // Keep only choices usable by the new program. Included services are not extras.
 export function compatibleBookingAddons(
-  selected: readonly string[], next: Offering | undefined, catalog: readonly Offering[], tariff = "",
+  selected: readonly string[], next: AddonOffering | undefined, catalog: readonly AddonOffering[], tariff = "",
 ): string[] {
   if (!next || next.availability === "unavailable") return [];
   const included = new Set(next.parts.map(part => part.service_slug).filter(Boolean));
-  const priced = (item: Offering, context: string) => item.prices.some(price => price.context === context);
+  const priced = (item: Pick<Offering, "prices">, context: string) => item.prices.some(price => price.context === context);
   const kept = [...new Set(selected)].filter(slug => {
     if (slug === next.slug || included.has(slug)) return false;
     const item = catalog.find(offering => offering.slug === slug);

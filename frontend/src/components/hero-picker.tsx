@@ -5,7 +5,7 @@ import { ChevronDown, Search } from "lucide-react";
 import type { Character } from "@/lib/types";
 import { matchesCharacterSearch } from "@/lib/character-search";
 
-export function HeroPicker({ heroes, value, onChange, label }: { heroes: Character[]; value: string; onChange: (slug: string) => void; label: string }) {
+export function HeroPicker({ heroes, value, onChange, label }: { heroes: readonly Pick<Character, "slug" | "name" | "availability">[]; value: string; onChange: (slug: string) => void; label: string }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const root = useRef<HTMLDivElement>(null);

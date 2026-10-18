@@ -126,6 +126,7 @@ jobs:
           node --experimental-transform-types scripts/check_booking_draft.mjs
           node --experimental-transform-types scripts/check_booking_quote.mjs
           node --experimental-transform-types scripts/check_booking_addon_transition.mjs
+          node --experimental-transform-types scripts/check_catalog_navigation.mjs
       - name: Check isolated browser journeys
         if: github.event_name == 'pull_request'
         shell: bash
@@ -156,6 +157,7 @@ jobs:
             cat "$BROWSER_QA_OUTPUT/backend.log" "$BROWSER_QA_OUTPUT/frontend.log"
             exit 1
           fi
+          node --experimental-transform-types scripts/check_booking_catalog.mjs
           npm --prefix scripts/browser-qa test
       - name: Record public HTTPS diagnostics
         if: ${{ always() && github.event_name == 'pull_request' }}
