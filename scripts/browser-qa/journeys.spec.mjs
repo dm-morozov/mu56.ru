@@ -4,9 +4,12 @@ import { test as base, expect } from '@playwright/test';
 // only to exercise the existing hostname-gated consent UI without changing it.
 // No live API, analytics, messaging or enquiry submission is allowed here.
 const test = base.extend({
-  isolated: [async ({ context }, use) => {
+  isolated: [async ({ context, page }, use) => {
+    // Depending on page keeps this cleanup ahead of page/context disposal.
+    void page;
     const forbidden = [];
-    await context.route('**/*', async route => {
+    const pending = new Set();
+    const serve = async route => {
       const request = route.request();
       const url = new URL(request.url());
       if (!['http:', 'https:'].includes(url.protocol) || url.hostname !== 'mu56.ru' || !['GET', 'HEAD'].includes(request.method()) || /\/api\/v1\/leads\/?$/.test(url.pathname)) {
@@ -29,8 +32,20 @@ const test = base.extend({
         }
       }
       await route.fulfill({ response });
-    });
+    };
+    const handler = route => {
+      const request = serve(route);
+      pending.add(request);
+      request.then(() => pending.delete(request), () => pending.delete(request));
+      return request;
+    };
+    await context.route('**/*', handler);
     await use();
+    // Block any new prefetch while draining in-flight loopback requests. Never
+    // remove interception while a page can issue requests to the fake origin.
+    await context.route('**/*', route => route.abort());
+    await context.unroute('**/*', handler);
+    await Promise.all([...pending]);
     expect(forbidden, 'No production, analytics or enquiry requests').toEqual([]);
   }, { auto: true }],
 });
@@ -66,7 +81,8 @@ async function visibleClose(page) {
 test('home consent, programme discovery and menu recovery', async ({ page }, info) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://mu56.ru/');
+  // Next normalizes the root trailing slash, as it already does for canonical.
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', /^https:\/\/mu56\.ru\/?$/);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://mu56.ru/media/social-preview-20261008-v5.jpg');
   await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute('content', '1200');
   await expect(page.locator('meta[property="og:image:height"]')).toHaveAttribute('content', '630');
