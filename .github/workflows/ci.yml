@@ -126,6 +126,46 @@ jobs:
           node --experimental-transform-types scripts/check_booking_draft.mjs
           node --experimental-transform-types scripts/check_booking_quote.mjs
           node --experimental-transform-types scripts/check_booking_addon_transition.mjs
+      - name: Check isolated browser journeys
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BROWSER_QA_OUTPUT: ${{ runner.temp }}/mu56-browser-qa
+        run: |
+          npm ci --prefix scripts/browser-qa --no-audit --no-fund
+          scripts/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+          python backend/manage.py seed_catalog
+          python backend/manage.py seed_character_content
+          python backend/manage.py seed_offering_content
+          python backend/manage.py seed_editorial
+          mkdir -p "$BROWSER_QA_OUTPUT"
+          python backend/manage.py runserver 127.0.0.1:8000 --noreload > "$BROWSER_QA_OUTPUT/backend.log" 2>&1 &
+          backend_pid=$!
+          SITE_INDEXING_ENABLED=true pnpm --dir frontend start --port 3100 > "$BROWSER_QA_OUTPUT/frontend.log" 2>&1 &
+          frontend_pid=$!
+          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3100/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then
+            cat "$BROWSER_QA_OUTPUT/backend.log" "$BROWSER_QA_OUTPUT/frontend.log"
+            exit 1
+          fi
+          npm --prefix scripts/browser-qa test
+      - name: Save browser QA evidence
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-qa-${{ github.sha }}
+          path: ${{ runner.temp }}/mu56-browser-qa/
+          include-hidden-files: false
+          if-no-files-found: warn
+          retention-days: 7
       - name: Build and publish pinned Docker images
         id: images
         if: github.event_name == 'push' && github.ref == 'refs/heads/local/release-20261006' && steps.changes.outputs.images == 'true'
