@@ -1,0 +1,149 @@
+.support {
+  display: grid;
+  gap: 28px;
+  margin-block: 24px 8px;
+}
+
+.withReview {
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.4fr);
+}
+
+.review {
+  min-width: 0;
+  align-self: start;
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--cream);
+}
+
+.reviewLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.review blockquote {
+  margin: 12px 0 18px;
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.review figcaption {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.review a,
+.articleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 12px;
+  line-height: 1.7;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.review a svg,
+.articleLink svg {
+  flex-shrink: 0;
+}
+
+.guide {
+  min-width: 0;
+}
+
+.guide h3 {
+  margin: 0 0 14px;
+  font-size: clamp(19px, 1.9vw, 24px);
+  line-height: 1.45;
+  letter-spacing: -.6px;
+}
+
+.help {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.help p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.help .helpButton {
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 12px;
+}
+
+.criteria {
+  border-top: 1px solid var(--line);
+}
+
+.criteria details {
+  border-bottom: 1px solid var(--line);
+}
+
+.criteria summary {
+  min-height: 48px;
+  padding-block: 13px;
+  font-size: 13px;
+  line-height: 1.7;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.criteria summary::marker {
+  color: var(--orange-ink);
+}
+
+.criteria p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.articleLink {
+  margin-top: 8px;
+}
+
+.support a:focus-visible,
+.support button:focus-visible,
+.criteria summary:focus-visible {
+  outline: 3px solid var(--orange-ink);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) {
+  .support a:hover,
+  .criteria summary:hover {
+    color: var(--orange-ink);
+  }
+}
+
+@media (max-width: 900px) {
+  .support { gap: 22px; }
+  .review { padding: 20px; }
+  .help { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
+
+@media (max-width: 700px) {
+  .withReview { grid-template-columns: 1fr; }
+  .support { gap: 24px; }
+  .review blockquote { font-size: 14px; line-height: 1.75; margin-bottom: 14px; }
+  .guide h3 { font-size: 21px; }
+  .help .helpButton { width: 100%; justify-content: space-between; }
+}

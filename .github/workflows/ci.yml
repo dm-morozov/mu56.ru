@@ -124,6 +124,8 @@ jobs:
           node scripts/check_seo.cjs
           node scripts/check_package_details.cjs
           node --experimental-transform-types scripts/check_programme_range.mjs
+          node --experimental-transform-types scripts/check_home_review.mjs
+          node scripts/check_home_choice_support.cjs
           node --experimental-transform-types scripts/check_analytics.mjs
           node --experimental-transform-types scripts/check_selection.mjs
           node --experimental-transform-types scripts/check_booking_draft.mjs

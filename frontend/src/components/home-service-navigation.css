@@ -18,10 +18,6 @@
 .home-format .home-format-action { width: 100%; font-size: 12px; min-height: 48px; padding: 12px 14px; justify-content: space-between; gap: 10px; text-align: left; }
 .home-format-action svg { flex-shrink: 0; }
 .home-choice-terms { font-size: 12px; color: var(--muted); line-height: 1.75; margin: 16px 0 24px; max-width: 920px; }
-.home-choice-help { display: flex; justify-content: space-between; align-items: center; gap: 28px; padding: 24px 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--cream); }
-.home-choice-help strong { font-size: 17px; }
-.home-choice-help p { max-width: 650px; font-size: 13px; color: var(--muted); line-height: 1.7; margin: 7px 0 0; }
-.home-choice-help .button { flex-shrink: 0; font-size: 12px; min-height: 48px; }
 .home-other-formats { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; padding-block: 22px 12px; }
 .home-other-formats>span { font-size: 12px; color: var(--muted); }
 .home-other-formats a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-weight: 700; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
@@ -30,7 +26,7 @@
 .home-choice-proof a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; }
 .home-service-navigation a:focus-visible { outline: 3px solid var(--orange-ink); outline-offset: 4px; }
 @media (hover: hover) { .home-other-formats a:hover, .home-choice-proof a:hover { color: var(--orange-ink); } }
-@media (max-width: 900px) { .home-service-navigation-list { gap: 12px; } .home-format { padding: 20px 18px; } .home-choice-help { padding: 22px; gap: 20px; } }
+@media (max-width: 900px) { .home-service-navigation-list { gap: 12px; } .home-format { padding: 20px 18px; } }
 @media (max-width: 700px) {
   .home-service-navigation { padding-block: 34px 0; scroll-margin-top: 90px; }
   .home-choice-heading { margin-bottom: 22px; }
@@ -44,8 +40,6 @@
   .home-format-facts { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 10px; margin-bottom: 20px; }
   .home-format-facts dd { font-size: 12px; }
   .home-format-facts .home-format-price { font-size: 22px; }
-  .home-choice-help { display: grid; gap: 17px; }
-  .home-choice-help .button { justify-self: start; }
   .home-other-formats { display: grid; gap: 2px; padding-top: 22px; }
   .home-choice-proof { column-gap: 20px; }
   .home-choice-proof>span { width: 100%; padding-top: 8px; }

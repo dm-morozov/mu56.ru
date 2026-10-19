@@ -3,7 +3,9 @@ import { ArrowUpRight, Camera, MessageCircle } from "lucide-react";
 import { basePrice, duration, rubles, type Offering } from "@/lib/types";
 import { packageTiming } from "@/lib/packages";
 import { programmeRange } from "@/lib/programme-range";
-import { ChooseButton } from "./choose-button";
+import type { Review } from "@/lib/editorial";
+import { homeReview } from "@/lib/home-review";
+import { HomeChoiceSupport } from "./home-choice-support";
 import "./home-service-navigation.css";
 
 const formats = [
@@ -39,7 +41,7 @@ function rangeSummary(items: Offering[], kind: string) {
   };
 }
 
-export function HomeServiceNavigation({ offerings }: { offerings: Offering[] }) {
+export function HomeServiceNavigation({ offerings, reviews = [] }: { offerings: Offering[]; reviews?: Review[] }) {
   return <section id="home-services" className="container home-service-navigation" aria-labelledby="home-service-navigation-title">
     <div className="home-choice-heading"><span className="eyebrow">Сначала — формат праздника</span><h2 id="home-service-navigation-title">Что порадует <em>вашего ребёнка?</em></h2><p>Можно пригласить любимого героя, встретить большого супергероя или объединить игры и шоу. Вот чем отличаются программы.</p></div>
     <nav aria-label="Направления праздников">
@@ -56,7 +58,7 @@ export function HomeServiceNavigation({ offerings }: { offerings: Offering[] }) 
       </ul>
     </nav>
     <p className="home-choice-terms">Фоновая музыка в пакетах не входит во время игр и шоу. Дополнения и выезд в удалённые районы согласуем до заказа.</p>
-    <div className="home-choice-help"><div><strong>Пока не знаете, что выбрать?</strong><p>Оставьте контакт — обсудим интересы ребёнка, дату и площадку. Заявка сама по себе не бронирует праздник.</p></div><ChooseButton className="button navy">Помогите выбрать</ChooseButton></div>
+    <HomeChoiceSupport review={homeReview(reviews)} />
     <nav className="home-other-formats" aria-label="Другие форматы праздника"><span>Особый повод?</span><Link href="/new-year">Дед Мороз и Снегурочка<ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/holidays">Для сада, школы и большой группы<ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/shows">Все услуги и дополнения<ArrowUpRight size={15} aria-hidden="true" /></Link></nav>
     <div className="home-choice-proof"><span>Посмотрите, как всё бывает:</span><Link href="/gallery"><Camera size={17} aria-hidden="true" />Реальные фотографии</Link><Link href="/reviews"><MessageCircle size={17} aria-hidden="true" />Отзывы родителей</Link></div>
   </section>;

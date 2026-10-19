@@ -407,3 +407,50 @@ test('package decision summary preserves group sound and venue conditions', asyn
   await noOverflow(page);
   await capture(page, info, 'package-silver-conditions');
 });
+
+test('early trust and choice criteria keep help available without a quiz', async ({ page }, info) => {
+  await page.goto('/');
+  await dismissAnalytics(page);
+  const support = page.locator('[data-choice-support]');
+  const lastFormat = await page.locator('.home-format-package').boundingBox();
+  const supportBox = await support.boundingBox();
+  expect(supportBox.y).toBeGreaterThan(lastFormat.y + lastFormat.height);
+  const review = support.locator('[data-choice-review]');
+  await expect(review.locator('blockquote')).toContainText('Замечательные аниматоры!');
+  await expect(review.locator('figcaption')).toContainText('Андрей');
+  const source = review.getByRole('link', { name: 'Профиль с отзывами на Авито', exact: true });
+  await expect(source).toHaveAttribute('href', /^https:\/\/www\.avito\.ru\/brands\//);
+  await expect(source).toHaveAttribute('target', '_blank');
+  await expect(source).toHaveAttribute('rel', /noopener/);
+  await expect(support.locator('input, select, textarea')).toHaveCount(0);
+  await expect(support.locator('details')).toHaveCount(4);
+  await expect(support.locator('details[open]')).toHaveCount(0);
+  await support.scrollIntoViewIfNeeded();
+  await noOverflow(page);
+  await capture(page, info, 'early-trust-and-choice');
+  for (const details of await support.locator('details').all()) {
+    const summary = details.locator('summary');
+    const box = await summary.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    await summary.focus();
+    await summary.press('Enter');
+    await expect(details).toHaveAttribute('open', '');
+    await noOverflow(page);
+    await summary.press('Enter');
+    await expect(details).not.toHaveAttribute('open', '');
+  }
+  const guide = support.getByRole('link', { name: /выбрать программу/i });
+  await expect(guide).toHaveAttribute('href', '/articles/kak-vybrat-programmu');
+  const help = support.getByRole('button', { name: 'Помогите выбрать', exact: true });
+  await help.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
+  await (await visibleClose(page)).click();
+  await expect(help).toBeFocused();
+  await guide.click();
+  await expect(page).toHaveURL(/\/articles\/kak-vybrat-programmu$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+});
