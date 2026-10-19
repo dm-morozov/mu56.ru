@@ -92,5 +92,15 @@ assert.deepEqual([...document.querySelectorAll('.home-format-price')].map(n => n
 const page = await readFile(resolve(root, 'frontend/src/app/page.tsx'), 'utf8');
 assert.match(page, /href=\{bumblebee \? "\/transformers\/bumblebee" : "\/transformers"\} className="hero-offer"/);
 assert.match(page, /HomeServiceNavigation offerings=\{offerings\}/); checks++;
+const publishedReview = { author: 'Андрей', text: 'Актуальный отзыв из API.', source_label: 'Avito', source_url: 'https://www.avito.ru/brands/test-profile/all/' };
+await render(h(HomeServiceNavigation, { offerings: [animation], reviews: [publishedReview] }));
+assert.equal(document.querySelector('[data-choice-review] blockquote').textContent, publishedReview.text);
+assert.equal(document.querySelectorAll('[data-choice-support] details').length, 4);
+const supportAction = document.querySelector('[data-choice-support] button');
+await act(() => supportAction.click());
+assert.equal(selection.offering, ''); assert.equal(selection.character, ''); checks++;
+await render(h(HomeServiceNavigation, { offerings: [animation], reviews: [] }));
+assert.equal(document.querySelector('[data-choice-review]'), null);
+assert.equal(document.querySelectorAll('[data-choice-support] details').length, 4); checks++;
 await act(() => host.unmount()); dom.window.close();
 console.log(`${checks} discovery action checks passed (real selection store; catalogue-derived pricing; no network).`);
