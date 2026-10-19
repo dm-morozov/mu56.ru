@@ -460,6 +460,19 @@ test('photo-first home keeps manual rails obvious and page scrolling natural', a
       await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await touch.detach();
       await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeGreaterThan(20);
+      // touchEnd starts native momentum/snap; wait for that gesture to finish
+      // before beginning a separate keyboard interaction (not a fixed sleep).
+      await track.evaluate(node => new Promise((resolve, reject) => {
+        let previous = node.scrollLeft, stable = 0;
+        const started = performance.now();
+        const timer = setInterval(() => {
+          const current = node.scrollLeft;
+          stable = Math.abs(current - previous) < .5 ? stable + 1 : 0;
+          previous = current;
+          if (stable >= 4) { clearInterval(timer); resolve(); }
+          else if (performance.now() - started > 5000) { clearInterval(timer); reject(new Error('Native swipe did not settle')); }
+        }, 50);
+      }));
       await track.focus(); await track.press('Home');
       await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeLessThanOrEqual(2);
     }

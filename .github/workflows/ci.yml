@@ -162,7 +162,6 @@ jobs:
           fi
           node --experimental-transform-types scripts/check_booking_catalog.mjs
           python scripts/check_seo_http.py --base http://127.0.0.1:3100 --indexing --report "$BROWSER_QA_OUTPUT/seo-http.json"
-          npm --prefix scripts/browser-qa test
           HOMEPAGE_QA_LABEL=after node scripts/browser-qa/home-layout.mjs
           # Reproducible homepage baseline from the PR base, with the same data.
           baseline="$RUNNER_TEMP/mu56-home-baseline"
@@ -178,6 +177,7 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:3101/ > /dev/null
           HOMEPAGE_QA_LABEL=before HOMEPAGE_QA_ORIGIN=http://127.0.0.1:3101 node scripts/browser-qa/home-layout.mjs
+          npm --prefix scripts/browser-qa test
       - name: Record public HTTPS diagnostics
         if: ${{ always() && github.event_name == 'pull_request' }}
         continue-on-error: true
