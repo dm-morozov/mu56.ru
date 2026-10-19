@@ -1,4 +1,5 @@
 import { test as base, expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 
 // All page requests are served by the isolated CI app. Keep the real hostname
 // only to exercise the existing hostname-gated consent UI without changing it.
@@ -113,7 +114,7 @@ test('home consent, programme discovery and menu recovery', async ({ page }, inf
   expect(choice.expiry - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   await capture(page, info, 'home-dismissed');
   // Locate the factual card independently of decorative home copy.
-  const animator = page.getByRole('navigation', { name: 'Направления праздников' }).getByRole('link', { name: /Аниматоры/ });
+  const animator = page.locator('.home-format-animation');
   expect((await animator.innerText()).replace(/\s/g, '')).toContain('3500₽');
   await page.locator('#home-services').scrollIntoViewIfNeeded();
   await capture(page, info, 'home-programme-navigation');
@@ -296,4 +297,107 @@ test('animator and Bumblebee landing layouts', async ({ page }, info) => {
     await noOverflow(page);
     await capture(page, info, name);
   }
+});
+
+
+test('three programme formats make price and next step explicit', async ({ page }, info) => {
+  await page.goto('/');
+  await dismissAnalytics(page);
+  const heroHelp = page.getByRole('button', { name: 'Помогите выбрать праздник', exact: true });
+  await heroHelp.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
+  await (await visibleClose(page)).click();
+  await expect(heroHelp).toBeFocused();
+  await page.getByRole('link', { name: 'Сравнить форматы', exact: true }).click();
+  await expect(page).toHaveURL(/#home-services$/);
+  await expect(page.locator('.home-format')).toHaveCount(3);
+  const normalize = text => text.replace(/\s/g, '');
+  expect(normalize(await page.locator('.home-format-animation').innerText())).toContain('3500₽');
+  expect(normalize(await page.locator('.home-format-transformer').innerText())).toContain('5800–6200₽');
+  await expect(page.locator('.home-format-package')).toContainText('Игры и шоу с ведущим');
+  await expect(page.locator('.home-choice-terms')).toContainText('выезд в удалённые районы');
+  for (const kind of ['animation', 'transformer', 'package']) {
+    const card = page.locator(`.home-format-${kind}`);
+    await card.scrollIntoViewIfNeeded();
+    await noOverflow(page);
+    await capture(page, info, `home-format-${kind}`);
+    const link = card.getByRole('link');
+    const box = await link.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  const help = page.getByRole('button', { name: 'Помогите выбрать', exact: true });
+  await help.click();
+  await expect(dialog).toBeVisible();
+  await (await visibleClose(page)).click();
+  await expect(help).toBeFocused();
+  await expect(page.locator('.home-choice-proof a[href="/gallery"]')).toBeAttached();
+  await expect(page.locator('.home-choice-proof a[href="/reviews"]')).toBeAttached();
+  await page.locator('.home-format-package').getByRole('link').click();
+  await expect(page).toHaveURL(/\/packages$/);
+});
+
+test('package overview leads to a decision before the long timeline', async ({ page }, info) => {
+  await page.goto('/packages');
+  await dismissAnalytics(page);
+  const overview = page.locator('#package-overview');
+  await expect(overview.locator('li')).toHaveCount(5);
+  await expect(overview.getByRole('link', { name: 'Сравнить пакеты', exact: true })).toHaveAttribute('href', '#compare');
+  const firstOverview = await overview.boundingBox();
+  const firstCard = await page.locator('.inner-packages').boundingBox();
+  expect(firstOverview.y + firstOverview.height).toBeLessThanOrEqual(firstCard.y);
+  await overview.scrollIntoViewIfNeeded();
+  await capture(page, info, 'package-overview');
+  const sweet = overview.getByRole('link', { name: 'Состав и условия пакета «Сладкий вайб»', exact: true });
+  await sweet.focus();
+  await sweet.press('Enter');
+  await expect(page).toHaveURL(/\/packages\/sweet-vibe$/);
+  const summary = page.locator('[data-package-summary="sweet-vibe"]');
+  await expect(summary.locator('[data-package-price]')).toHaveText(/5\s500 ₽за программу/);
+  await expect(summary.getByRole('list', { name: 'Игры и шоу в пакете' })).toContainText('Шоу сладкой ваты');
+  await expect(summary).toContainText('1 ч 30 мин');
+  await expect(summary).toContainText('10 мин фоновой музыки — без ведущего');
+  const trigger = summary.getByRole('button', { name: 'Хочу эту программу', exact: true });
+  await expect(trigger).toHaveCount(1);
+  const triggerBox = await trigger.boundingBox();
+  const imageBox = await page.locator('main img').first().boundingBox();
+  await writeFile(info.outputPath('package-layout-metrics.json'), JSON.stringify({ viewport: page.viewportSize(), cta: triggerBox, image: imageBox }, null, 2));
+  if (page.viewportSize().width <= 800) {
+    expect(triggerBox.y + triggerBox.height).toBeLessThan(imageBox.y);
+    expect(triggerBox.y).toBeLessThan(900);
+  }
+  await noOverflow(page);
+  await capture(page, info, 'package-decision-first');
+  await trigger.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('sweet-vibe');
+  await (await visibleClose(page)).click();
+  await expect(trigger).toBeFocused();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/packages$/);
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator('#package-overview')).toBeVisible();
+});
+
+test('package decision summary preserves group sound and venue conditions', async ({ page }, info) => {
+  await page.goto('/packages/sweet-vibe?occasion=graduation');
+  await dismissAnalytics(page);
+  const summary = page.locator('[data-package-summary="sweet-vibe"]');
+  await expect(summary.locator('[data-package-price]')).toHaveText(/7\s500 ₽за программу со звуком/);
+  await expect(summary).toContainText('Комплект звука: 2');
+  await noOverflow(page);
+  await capture(page, info, 'package-group-summary');
+  await summary.getByRole('button', { name: 'Выбрать пакет для группы', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('sweet-vibe');
+  await expect(dialog.locator('.lead-quote')).toContainText(/Всего за программу: 7\s500 ₽/);
+  const sound = dialog.getByRole('checkbox', { name: /Много звука/ });
+  await expect(sound).toBeChecked();
+  await expect(sound).toBeDisabled();
+  await (await visibleClose(page)).click();
+  await page.goto('/packages/silver-party');
+  await expect(page.locator('[data-package-summary] .package-stage-condition')).toContainText('помещении');
+  await expect(page.locator('[data-package-summary] a[href="/shows/silver"]')).toHaveCount(1);
+  await noOverflow(page);
 });
