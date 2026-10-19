@@ -454,3 +454,40 @@ test('early trust and choice criteria keep help available without a quiz', async
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });
+
+
+test('occasion sound wording matches kindergarten and graduation selection', async ({ page }, info) => {
+  for (const [occasion, price, required] of [['kindergarten', 5500, false], ['graduation', 7500, true]]) {
+    await page.goto(`/holidays/${occasion}`);
+    await dismissAnalytics(page);
+    const note = page.locator('.occasion-pricing-note');
+    if (required) {
+      await expect(note).toContainText('он обязателен для выпускного');
+      await expect(note).not.toContainText('обязателен для праздников для групп');
+    } else {
+      await expect(note).toContainText('без комплекта мощного звука');
+      await expect(note).toContainText('если больше 30 — комплект мощного звука');
+    }
+    await note.scrollIntoViewIfNeeded();
+    await noOverflow(page);
+    await capture(page, info, `${occasion}-sound-note`);
+    const card = page.locator('#program-sweet-vibe');
+    expect((await card.locator('.package-price').innerText()).replace(/\s/g, '')).toContain(`${price}₽`);
+    const choose = card.getByRole('button', { name: 'Выбрать пакет «Сладкий вайб»', exact: true });
+    await choose.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.locator('input[name="offering"]')).toHaveValue('sweet-vibe');
+    await expect.poll(async () => (await dialog.locator('.lead-quote').innerText()).replace(/\s/g, '')).toContain(`Всегозапрограмму:${price}₽`);
+    const sound = dialog.getByRole('checkbox', { name: /Много звука/ });
+    if (required) {
+      await expect(sound).toBeChecked();
+      await expect(sound).toBeDisabled();
+    } else {
+      await expect(sound).not.toBeChecked();
+      await expect(sound).toBeEnabled();
+    }
+    await (await visibleClose(page)).click();
+    await expect(choose).toBeFocused();
+    await expect(dialog).not.toBeVisible();
+  }
+});
