@@ -113,11 +113,9 @@ test('home consent, programme discovery and menu recovery', async ({ page }, inf
   expect(choice.choice).toBe('denied');
   expect(choice.expiry - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   await capture(page, info, 'home-dismissed');
-  // Locate the factual card independently of decorative home copy.
-  const animator = page.locator('.home-format-animation');
-  expect((await animator.innerText()).replace(/\s/g, '')).toContain('3500₽');
-  await page.locator('#home-services').scrollIntoViewIfNeeded();
-  await capture(page, info, 'home-programme-navigation');
+  expect((await page.locator('.home-animation-price').innerText()).replace(/\s/g, '')).toContain('3500₽');
+  await page.locator('#transformers').scrollIntoViewIfNeeded();
+  await capture(page, info, 'home-photo-discovery');
   await expect(page.locator('main a[href="/transformers/bumblebee"]').first()).toBeAttached();
   if (page.viewportSize().width <= 800) {
     const menu = page.getByRole('button', { name: 'Открыть меню', exact: true });
@@ -300,44 +298,6 @@ test('animator and Bumblebee landing layouts', async ({ page }, info) => {
 });
 
 
-test('three programme formats make price and next step explicit', async ({ page }, info) => {
-  await page.goto('/');
-  await dismissAnalytics(page);
-  const heroHelp = page.getByRole('button', { name: 'Помогите выбрать праздник', exact: true });
-  await heroHelp.click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
-  await (await visibleClose(page)).click();
-  await expect(heroHelp).toBeFocused();
-  await page.getByRole('link', { name: 'Сравнить форматы', exact: true }).click();
-  await expect(page).toHaveURL(/#home-services$/);
-  await expect(page.locator('.home-format')).toHaveCount(3);
-  const normalize = text => text.replace(/\s/g, '');
-  expect(normalize(await page.locator('.home-format-animation').innerText())).toContain('3500₽');
-  expect(normalize(await page.locator('.home-format-transformer').innerText())).toContain('5800–6200₽');
-  await expect(page.locator('.home-format-package')).toContainText('Игры и шоу с ведущим');
-  await expect(page.locator('.home-choice-terms')).toContainText('выезд в удалённые районы');
-  for (const kind of ['animation', 'transformer', 'package']) {
-    const card = page.locator(`.home-format-${kind}`);
-    await card.scrollIntoViewIfNeeded();
-    await noOverflow(page);
-    await capture(page, info, `home-format-${kind}`);
-    const link = card.getByRole('link');
-    const box = await link.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-  }
-  const help = page.getByRole('button', { name: 'Помогите выбрать', exact: true });
-  await help.click();
-  await expect(dialog).toBeVisible();
-  await (await visibleClose(page)).click();
-  await expect(help).toBeFocused();
-  await expect(page.locator('.home-choice-proof a[href="/gallery"]')).toBeAttached();
-  await expect(page.locator('.home-choice-proof a[href="/reviews"]')).toBeAttached();
-  await page.locator('.home-format-package').getByRole('link').click();
-  await expect(page).toHaveURL(/\/packages$/);
-});
-
 test('package overview leads to a decision before the long timeline', async ({ page }, info) => {
   await page.goto('/packages');
   await dismissAnalytics(page);
@@ -408,54 +368,6 @@ test('package decision summary preserves group sound and venue conditions', asyn
   await capture(page, info, 'package-silver-conditions');
 });
 
-test('early trust and choice criteria keep help available without a quiz', async ({ page }, info) => {
-  await page.goto('/');
-  await dismissAnalytics(page);
-  const support = page.locator('[data-choice-support]');
-  const lastFormat = await page.locator('.home-format-package').boundingBox();
-  const supportBox = await support.boundingBox();
-  expect(supportBox.y).toBeGreaterThan(lastFormat.y + lastFormat.height);
-  const review = support.locator('[data-choice-review]');
-  await expect(review.locator('blockquote')).toContainText('Замечательные аниматоры!');
-  await expect(review.locator('figcaption')).toContainText('Андрей');
-  const source = review.getByRole('link', { name: 'Профиль с отзывами на Авито', exact: true });
-  await expect(source).toHaveAttribute('href', /^https:\/\/www\.avito\.ru\/brands\//);
-  await expect(source).toHaveAttribute('target', '_blank');
-  await expect(source).toHaveAttribute('rel', /noopener/);
-  await expect(support.locator('input, select, textarea')).toHaveCount(0);
-  await expect(support.locator('details')).toHaveCount(4);
-  await expect(support.locator('details[open]')).toHaveCount(0);
-  await support.scrollIntoViewIfNeeded();
-  await noOverflow(page);
-  await capture(page, info, 'early-trust-and-choice');
-  for (const details of await support.locator('details').all()) {
-    const summary = details.locator('summary');
-    const box = await summary.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-    await summary.focus();
-    await summary.press('Enter');
-    await expect(details).toHaveAttribute('open', '');
-    await noOverflow(page);
-    await summary.press('Enter');
-    await expect(details).not.toHaveAttribute('open', '');
-  }
-  const guide = support.getByRole('link', { name: /выбрать программу/i });
-  await expect(guide).toHaveAttribute('href', '/articles/kak-vybrat-programmu');
-  const help = support.getByRole('button', { name: 'Помогите выбрать', exact: true });
-  await help.click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
-  await (await visibleClose(page)).click();
-  await expect(help).toBeFocused();
-  await guide.click();
-  await expect(page).toHaveURL(/\/articles\/kak-vybrat-programmu$/);
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.goBack();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('dialog')).not.toBeVisible();
-});
-
-
 test('occasion sound wording matches kindergarten and graduation selection', async ({ page }, info) => {
   for (const [occasion, price, required] of [['kindergarten', 5500, false], ['graduation', 7500, true]]) {
     await page.goto(`/holidays/${occasion}`);
@@ -490,4 +402,116 @@ test('occasion sound wording matches kindergarten and graduation selection', asy
     await expect(choose).toBeFocused();
     await expect(dialog).not.toBeVisible();
   }
+});
+
+
+test('photo-first home keeps manual rails obvious and page scrolling natural', async ({ page }, info) => {
+  await page.goto('/');
+  await dismissAnalytics(page);
+  await expect(page.locator('#home-services, [data-choice-support], .article-grid, .character-callout')).toHaveCount(0);
+  const firstSectionAfterHero = page.locator('main > section').nth(1);
+  await expect(firstSectionAfterHero).toHaveAttribute('id', 'transformers');
+  await expect(page.locator('#home-transformers [data-carousel-slide]')).toHaveCount(3);
+  await expect(page.locator('#home-characters [data-carousel-slide]')).toHaveCount(4);
+  await expect(page.locator('#home-packages [data-carousel-slide]')).toHaveCount(5);
+  await expect(page.locator('#home-occasions [data-carousel-slide]')).toHaveCount(3);
+  await expect(page.getByRole('link', { name: 'Весь каталог персонажей', exact: true })).toBeAttached();
+  await expect(page.getByRole('link', { name: 'Все пакеты', exact: true })).toBeAttached();
+  for (const id of ['home-transformers', 'home-characters', 'home-packages', 'home-occasions', 'home-reviews']) {
+    const rail = page.locator(`#${id}`), track = rail.locator('[data-carousel-track]');
+    await rail.scrollIntoViewIfNeeded();
+    const geometry = await track.evaluate(node => {
+      const box = node.getBoundingClientRect();
+      return { width: node.clientWidth, height: node.clientHeight, scrollHeight: node.scrollHeight,
+        cards: [...node.children].map(card => ({ left: card.getBoundingClientRect().left - box.left, right: card.getBoundingClientRect().right - box.left, width: card.getBoundingClientRect().width })) };
+    });
+    // No nested vertical scroll area and no page-wide horizontal overflow.
+    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.height + 2);
+    await noOverflow(page);
+    if (id === 'home-characters') {
+      expect(geometry.cards.filter(card => card.left >= -2 && card.right <= geometry.width + 2)).toHaveLength(2);
+    } else if (page.viewportSize().width <= 700) {
+      expect(geometry.cards[1].left).toBeLessThan(geometry.width - 10);
+      expect(geometry.cards[1].right).toBeGreaterThan(geometry.width);
+    }
+    await capture(page, info, `${id}-first`);
+    const next = rail.locator('[data-carousel-next]'), previous = rail.locator('[data-carousel-previous]');
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    for (const button of [next, previous]) {
+      const box = await button.boundingBox(); expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    await next.click();
+    await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeGreaterThan(1);
+    await track.focus(); await track.press('End');
+    await expect(next).toBeDisabled(); await expect(previous).toBeEnabled();
+    await capture(page, info, `${id}-last`);
+    await track.press('Home');
+    await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeLessThanOrEqual(2);
+    await expect(previous).toBeDisabled();
+    if (id === 'home-transformers' && page.viewportSize().width <= 700) {
+      // Real Chromium touch events exercise the native horizontal gesture path.
+      const rect = await track.boundingBox(), viewport = page.viewportSize();
+      const y = Math.min(viewport.height - 100, Math.max(120, rect.y + 140));
+      const startX = rect.x + rect.width * .8, endX = rect.x + rect.width * .2;
+      const touch = await page.context().newCDPSession(page);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y }] });
+      for (let step = 1; step <= 6; step++) await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: startX + (endX - startX) * step / 6, y }] });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await touch.detach();
+      await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeGreaterThan(20);
+      await track.focus(); await track.press('Home');
+      await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeLessThanOrEqual(2);
+    }
+  }
+  const track = page.locator('#home-transformers [data-carousel-track]');
+  await track.scrollIntoViewIfNeeded();
+  const box = await track.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, Math.max(80, box.y + 80));
+  const before = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, 250);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 100);
+});
+
+test('photo catalogue paths preserve details, enquiries and return navigation', async ({ page }, info) => {
+  await page.goto('/'); await dismissAnalytics(page);
+  const help = page.getByRole('button', { name: 'Помогите выбрать праздник', exact: true });
+  await help.click(); const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
+  await (await visibleClose(page)).click(); await expect(help).toBeFocused();
+  await page.getByRole('link', { name: 'Посмотреть программы', exact: true }).filter({ has: page.locator('svg') }).first().click();
+  await expect(page).toHaveURL(/#transformers$/);
+  const packageLink = page.locator('[data-home-package="sweet-vibe"]').getByRole('link', { name: 'Состав и условия пакета «Сладкий вайб»', exact: true });
+  await packageLink.focus(); await packageLink.press('Enter');
+  await expect(page).toHaveURL(/\/packages\/sweet-vibe$/);
+  await expect(page.locator('[data-package-price]')).toContainText(/5\s500 ₽/);
+  const choose = page.getByRole('button', { name: 'Хочу эту программу', exact: true });
+  await choose.click(); await expect(dialog.locator('input[name="offering"]')).toHaveValue('sweet-vibe');
+  await (await visibleClose(page)).click(); await expect(choose).toBeFocused();
+  await page.goBack(); await expect(page).toHaveURL(/\/#transformers$/);
+  await expect(dialog).not.toBeVisible();
+  const season = page.locator('.home-season');
+  await season.getByRole('button', { name: 'Хочу новогоднюю сказку', exact: true }).click();
+  await expect(dialog.locator('input[name="offering"]')).toHaveValue('new-year');
+  await expect(dialog.locator('.lead-quote')).toContainText(/6\s000 ₽/);
+  await (await visibleClose(page)).click();
+  await season.scrollIntoViewIfNeeded(); await capture(page, info, 'compact-new-year');
+  await expect(season.getByRole('link', { name: 'Все новогодние программы', exact: true })).toHaveAttribute('href', '/new-year');
+  await page.getByRole('link', { name: 'Весь каталог персонажей', exact: true }).click();
+  await expect(page).toHaveURL(/\/characters$/);
+  await expect(dialog).not.toBeVisible();
+});
+
+
+test('manual carousel handles repeated controls with normal motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/'); await dismissAnalytics(page);
+  const rail = page.locator('#home-packages'), track = rail.locator('[data-carousel-track]');
+  await rail.scrollIntoViewIfNeeded();
+  const stride = await track.evaluate(node => node.children[1].offsetLeft - node.children[0].offsetLeft);
+  await rail.locator('[data-carousel-next]').click({ clickCount: 2, delay: 30 });
+  await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeGreaterThan(stride * 1.8);
+  await rail.locator('[data-carousel-previous]').click({ clickCount: 2, delay: 30 });
+  await expect.poll(() => track.evaluate(node => node.scrollLeft)).toBeLessThanOrEqual(2);
+  await expect(rail.locator('[data-carousel-previous]')).toBeDisabled();
 });
