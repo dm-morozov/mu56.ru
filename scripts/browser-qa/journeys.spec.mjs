@@ -399,5 +399,11 @@ test('package decision summary preserves group sound and venue conditions', asyn
   await page.goto('/packages/silver-party');
   await expect(page.locator('[data-package-summary] .package-stage-condition')).toContainText('помещении');
   await expect(page.locator('[data-package-summary] a[href="/shows/silver"]')).toHaveCount(1);
+  const conditionBox = await page.locator('[data-package-summary] .package-stage-condition').boundingBox();
+  const silverCta = page.locator('[data-package-summary]').getByRole('button', { name: 'Хочу эту программу', exact: true });
+  const silverCtaBox = await silverCta.boundingBox();
+  expect(silverCtaBox.y - conditionBox.y - conditionBox.height).toBeGreaterThanOrEqual(16);
+  await silverCta.scrollIntoViewIfNeeded();
   await noOverflow(page);
+  await capture(page, info, 'package-silver-conditions');
 });
