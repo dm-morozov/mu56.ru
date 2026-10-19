@@ -5,7 +5,6 @@ import { characterImage, offeringUrl, packageImage } from "@/lib/images";
 import { type getOccasion } from "@/lib/occasions";
 import { packagePrice, packageTiming } from "@/lib/packages";
 import { basePrice, duration, rubles, type Offering } from "@/lib/types";
-import { packageStageCondition } from "./package-stage-condition";
 import styles from "./home-photo-cards.module.css";
 
 export function HomePackageCard({ offering, offerings }: { offering: Offering; offerings: Offering[] }) {
@@ -13,15 +12,9 @@ export function HomePackageCard({ offering, offerings }: { offering: Offering; o
   const photo = packageImage(offering.slug);
   const timing = packageTiming(offering);
   const price = packagePrice(offering, offerings);
-  const soundIncluded = !packagePrice(offering, offerings, true).addonSound;
   const activeParts = offering.parts.filter(part => part.led_by_performer);
   const composition = activeParts.map(part => part.title.replace("Аниматор на праздник", "Анимация с героем"));
-  const stageConditions = activeParts.flatMap(part => {
-    const service = offerings.find(item => item.slug === part.service_slug);
-    const condition = packageStageCondition(service);
-    return condition ? [condition] : [];
-  });
-  const hasFoam = activeParts.some(part => part.service_slug === "foam");
+
 
   return <article className={styles.card} data-home-package={offering.slug}>
     {photo && <Link href={href} className={styles.photo} aria-label={`Посмотреть пакет «${offering.name}»`}>
@@ -35,12 +28,6 @@ export function HomePackageCard({ offering, offerings }: { offering: Offering; o
         <li><Clock3 size={17} aria-hidden="true" /><span>{timing.approximate ? "≈ " : ""}{timing.active ? duration(timing.active) : "Время согласуем"} · игры и шоу</span></li>
         <li><Users size={17} aria-hidden="true" /><span>В команде: {offering.included_performers} чел.</span></li>
       </ul>
-      {(soundIncluded || stageConditions.length > 0 || hasFoam || offering.requirements) && <div className={styles.conditions}>
-        {soundIncluded && <p>Звук с двумя микрофонами включён.</p>}
-        {stageConditions.map(condition => <p key={condition}>{condition}</p>)}
-        {hasFoam && <p>Условия площадки и подходящую погоду обсудим при заказе.</p>}
-        {offering.requirements && <p>{offering.requirements}</p>}
-      </div>}
       <div className={styles.bottom}>
         <p className={styles.price}><strong>{price.total !== undefined ? rubles(price.total) : "Цену уточним"}</strong><span>за программу</span></p>
         <Link href={href} className={styles.primary} aria-label={`Состав и условия пакета «${offering.name}»`}>Состав и условия <ArrowUpRight size={19} aria-hidden="true" /></Link>

@@ -480,9 +480,25 @@ test('photo-first home keeps manual rails obvious and page scrolling natural', a
   const track = page.locator('#home-transformers [data-carousel-track]');
   await track.scrollIntoViewIfNeeded();
   const box = await track.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, Math.max(80, box.y + 80));
   const before = await page.evaluate(() => scrollY);
-  await page.mouse.wheel(0, 250);
+  if (page.viewportSize().width <= 700) {
+    // Touch emulation uses the phone's actual gesture, not a desktop wheel.
+    const viewport = page.viewportSize();
+    const top = Math.max(90, box.y), bottom = Math.min(viewport.height - 30, box.y + box.height);
+    const x = box.x + box.width / 2, startY = bottom - 30, endY = Math.max(top + 20, startY - 250);
+    expect(startY - endY).toBeGreaterThan(150);
+    const touch = await page.context().newCDPSession(page);
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: startY }] });
+    for (let step = 1; step <= 8; step++) {
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: startY + (endY - startY) * step / 8 }] });
+      await page.waitForTimeout(16); // One frame between points in the gesture.
+    }
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await touch.detach();
+  } else {
+    await page.mouse.move(box.x + box.width / 2, Math.max(100, box.y + 80));
+    await page.mouse.wheel(0, 250);
+  }
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 100);
 });
 

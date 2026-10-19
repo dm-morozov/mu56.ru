@@ -144,11 +144,13 @@ assert.match(text(homePackage), /1 ч 30 мин/);
 assert.doesNotMatch(text(homePackage), /1 ч 40 мин|Фоновая музыка/);
 assert.equal(nodes(homePackage).filter(node => node.type === ChooseButton).length, 0);
 assert.equal(nodes(homePackage).find(node => node.props['aria-label'] === 'Состав и условия пакета «Тестовый пакет»').props.href, '/packages/sweet-vibe');
+// Detailed requirements stay on programme pages, not duplicated in the photo teaser.
 const homeSilver = HomePackageCard({ offering: silverPackage, offerings: [silver] });
-assert.match(text(homeSilver), /Только в закрытом помещении/);
+assert.equal(nodes(homeSilver).filter(node => node.type === 'test-link').at(-1).props.href, '/packages/sweet-vibe');
 const homeFoam = HomePackageCard({ offering: foam, offerings: [sound] });
-assert.match(text(homeFoam), /Звук с двумя микрофонами включён/);
-assert.match(text(homeFoam), /подходящую погоду/);
+assert.match(text(homeFoam), /Состав и условия/);
+assert.match(text(homeFoam), new RegExp(rubles(5500)));
+
 const changed = HomePackageCard({ offering: fixture({ name: 'Новый пакет', prices: [{ context: 'base', amount_rub: 8765 }] }), offerings: [] });
 assert.match(text(changed), /Новый пакет/); assert.match(text(changed), /8\s765 ₽/);
 assert.match(text(HomePackageCard({ offering: fixture({ prices: [], parts: [] }), offerings: [] })), /Цену уточним/);
@@ -157,4 +159,4 @@ assert.match(text(transformer), /Два героя · 1 ч/);
 assert.equal(nodes(transformer).filter(node => node.type === 'test-link').every(node => node.props.href === '/transformers/bumblebee'), true);
 const group = HomeOccasionCard({ occasion: getOccasion('kindergarten') });
 assert.equal(nodes(group).filter(node => node.type === 'test-link').every(node => node.props.href === '/holidays/kindergarten'), true);
-console.log('Homepage photo teasers: current catalogue facts, no timelines, exact detail paths, conditions, included sound and missing price passed.');
+console.log('Homepage photo teasers: current catalogue facts, no timelines, exact detail paths, detail access and missing price passed.');

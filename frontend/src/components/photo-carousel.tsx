@@ -71,32 +71,44 @@ export function PhotoCarousel({ id, label, children, variant = "photos" }: Photo
 
     let frame = 0;
     let settled = 0;
+    const finishRequestedScroll = () => {
+      // Cancelling a smooth scroll can emit its scrollend after another click
+      // has queued a new destination. Only that destination can finish it.
+      const target = requestedLeft.current;
+      if (target !== null && Math.abs(track.scrollLeft - target) <= edgeTolerance) {
+        requestedLeft.current = null;
+      }
+      measure();
+    };
     const onScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(measure);
       window.clearTimeout(settled);
-      settled = window.setTimeout(() => { requestedLeft.current = null; }, 150);
+      settled = window.setTimeout(finishRequestedScroll, 150);
     };
     const onResize = () => {
       requestedLeft.current = null;
       measure();
     };
-    const onScrollEnd = () => {
+    const onNativeWheel = () => {
+      // Native wheel/trackpad input supersedes queued button navigation.
+      // This passive listener never changes or prevents the gesture itself.
       requestedLeft.current = null;
-      measure();
     };
     const observer = new ResizeObserver(onResize);
     observer.observe(track);
     Array.from(track.children).forEach(slide => observer.observe(slide));
     track.addEventListener("scroll", onScroll, { passive: true });
-    track.addEventListener("scrollend", onScrollEnd);
+    track.addEventListener("scrollend", finishRequestedScroll);
+    track.addEventListener("wheel", onNativeWheel, { passive: true });
     measure();
     setReady(true);
 
     return () => {
       observer.disconnect();
       track.removeEventListener("scroll", onScroll);
-      track.removeEventListener("scrollend", onScrollEnd);
+      track.removeEventListener("scrollend", finishRequestedScroll);
+      track.removeEventListener("wheel", onNativeWheel);
       cancelAnimationFrame(frame);
       window.clearTimeout(settled);
       requestedLeft.current = null;
