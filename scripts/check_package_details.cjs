@@ -24,7 +24,7 @@ function load(filename) {
     if (specifier === 'next/image') return 'test-image';
     if (specifier === 'next/link') return 'test-link';
     if (specifier === './choose-button') return { ChooseButton };
-    if (specifier === '@/lib/images') return { packageImage: slug => `/test/${slug}.jpg` };
+    if (specifier === '@/lib/images') return { packageImage: slug => `/test/${slug}.jpg`, characterImage: slug => `/test/${slug}.jpg`, offeringUrl: (kind, slug) => `/${kind === 'package' ? 'packages' : 'transformers'}/${slug}` };
     if (specifier.endsWith('.css')) return {};
     if (specifier.startsWith('@/') || specifier.startsWith('.')) {
       const resolved = specifier.startsWith('@/') ? path.join(root, 'src', specifier.slice(2)) : path.resolve(path.dirname(filename), specifier);
@@ -135,3 +135,28 @@ assert.deepEqual(overviewLinks, ['#compare', '/packages/sweet-vibe', '/packages/
 assert.match(text(overview), /Комплект мощного звука с двумя микрофонами включён/);
 assert.match(text(PackageOverview({ packages: [fixture({ prices: [], parts: [] })] })), /Состав программы уточнимИгры и шоу с ведущимВремя согласуемБазовая ценаЦену уточним/);
 console.log('Package overview: catalogue edits, detail links, hosted time, included sound and incomplete data passed.');
+
+// Homepage teasers keep the catalogue facts while leaving detailed timelines inside.
+const { HomePackageCard, HomeTransformerCard, HomeOccasionCard } = load(path.join(root, 'src/components/home-photo-cards.tsx'));
+const homePackage = HomePackageCard({ offering: fixture(), offerings: [sound] });
+assert.match(text(homePackage), /5\s500 ₽/);
+assert.match(text(homePackage), /1 ч 30 мин/);
+assert.doesNotMatch(text(homePackage), /1 ч 40 мин|Фоновая музыка/);
+assert.equal(nodes(homePackage).filter(node => node.type === ChooseButton).length, 0);
+assert.equal(nodes(homePackage).find(node => node.props['aria-label'] === 'Состав и условия пакета «Тестовый пакет»').props.href, '/packages/sweet-vibe');
+// Detailed requirements stay on programme pages, not duplicated in the photo teaser.
+const homeSilver = HomePackageCard({ offering: silverPackage, offerings: [silver] });
+assert.equal(nodes(homeSilver).filter(node => node.type === 'test-link').at(-1).props.href, '/packages/sweet-vibe');
+const homeFoam = HomePackageCard({ offering: foam, offerings: [sound] });
+assert.match(text(homeFoam), /Состав и условия/);
+assert.match(text(homeFoam), new RegExp(rubles(5500)));
+
+const changed = HomePackageCard({ offering: fixture({ name: 'Новый пакет', prices: [{ context: 'base', amount_rub: 8765 }] }), offerings: [] });
+assert.match(text(changed), /Новый пакет/); assert.match(text(changed), /8\s765 ₽/);
+assert.match(text(HomePackageCard({ offering: fixture({ prices: [], parts: [] }), offerings: [] })), /Цену уточним/);
+const transformer = HomeTransformerCard({ offering: fixture({ kind: 'transformer', slug: 'bumblebee', included_performers: 2, duration_minutes: 60 }) });
+assert.match(text(transformer), /Два героя · 1 ч/);
+assert.equal(nodes(transformer).filter(node => node.type === 'test-link').every(node => node.props.href === '/transformers/bumblebee'), true);
+const group = HomeOccasionCard({ occasion: getOccasion('kindergarten') });
+assert.equal(nodes(group).filter(node => node.type === 'test-link').every(node => node.props.href === '/holidays/kindergarten'), true);
+console.log('Homepage photo teasers: current catalogue facts, no timelines, exact detail paths, detail access and missing price passed.');

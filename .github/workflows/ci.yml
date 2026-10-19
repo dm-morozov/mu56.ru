@@ -123,9 +123,6 @@ jobs:
           pnpm --dir frontend typecheck
           node scripts/check_seo.cjs
           node scripts/check_package_details.cjs
-          node --experimental-transform-types scripts/check_programme_range.mjs
-          node --experimental-transform-types scripts/check_home_review.mjs
-          node scripts/check_home_choice_support.cjs
           node --experimental-transform-types scripts/check_analytics.mjs
           node --experimental-transform-types scripts/check_selection.mjs
           node --experimental-transform-types scripts/check_booking_draft.mjs
@@ -137,6 +134,7 @@ jobs:
         shell: bash
         env:
           BROWSER_QA_OUTPUT: ${{ runner.temp }}/mu56-browser-qa
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           npm ci --prefix scripts/browser-qa --no-audit --no-fund
           google-chrome --version
@@ -164,6 +162,21 @@ jobs:
           fi
           node --experimental-transform-types scripts/check_booking_catalog.mjs
           python scripts/check_seo_http.py --base http://127.0.0.1:3100 --indexing --report "$BROWSER_QA_OUTPUT/seo-http.json"
+          HOMEPAGE_QA_LABEL=after node scripts/browser-qa/home-layout.mjs
+          # Reproducible homepage baseline from the PR base, with the same data.
+          baseline="$RUNNER_TEMP/mu56-home-baseline"
+          git worktree add --detach "$baseline" "$BASE_SHA"
+          pnpm --dir "$baseline/frontend" install --frozen-lockfile > "$BROWSER_QA_OUTPUT/baseline-install.log" 2>&1
+          pnpm --dir "$baseline/frontend" build > "$BROWSER_QA_OUTPUT/baseline-build.log" 2>&1
+          SITE_INDEXING_ENABLED=true pnpm --dir "$baseline/frontend" start --port 3101 > "$BROWSER_QA_OUTPUT/baseline-server.log" 2>&1 &
+          baseline_pid=$!
+          trap 'kill "$backend_pid" "$frontend_pid" "$baseline_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3101/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3101/ > /dev/null
+          HOMEPAGE_QA_LABEL=before HOMEPAGE_QA_ORIGIN=http://127.0.0.1:3101 node scripts/browser-qa/home-layout.mjs
           npm --prefix scripts/browser-qa test
       - name: Record public HTTPS diagnostics
         if: ${{ always() && github.event_name == 'pull_request' }}

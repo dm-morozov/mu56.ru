@@ -1,0 +1,65 @@
+/* Homepage-only density: preserve the full catalogues and detailed programme pages. */
+.home-page .section { padding-block: 48px; }
+.home-page .section-head { margin-bottom: 24px; gap: 24px; align-items: center; }
+.home-page .section-head h2 { font-size: clamp(25px, 2.6vw, 34px); }
+.home-page .section-head > .text-link { margin-top: 0; min-height: 44px; flex-shrink: 0; }
+.home-page .section-head > .button { min-height: 48px; flex-shrink: 0; }
+.home-page .home-section-note { max-width: 850px; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.home-animation-price { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: -8px 0 18px; font-size: 15px; }
+.home-animation-price a { display: inline-flex; gap: 5px; align-items: center; min-height: 44px; color: var(--orange-ink); text-decoration: underline; text-underline-offset: 4px; }
+.home-page #home-characters .character-visual { height: 330px; }
+.home-page #home-characters .character-info { padding: 18px 22px 22px; }
+.home-page #home-characters .character-card-title { font-size: 20px; }
+.home-page #home-characters .character-info > p { font-size: 12px; }
+.home-page .home-season { margin-block: 28px; }
+.home-page .home-season .season-photo { min-height: 0; height: 430px; max-height: none; aspect-ratio: auto; }
+.home-page .home-season .season-photo img { object-fit: contain; object-position: center; }
+.home-page .home-season .season-copy { padding: 30px; }
+.home-page .home-season .season-copy h2 { font-size: 30px; margin-bottom: 14px; }
+.home-page .home-season .season-price { margin: 14px 0 8px; }
+.home-page .home-season .season-actions { margin-top: 18px; }
+.home-page .home-season .season-actions .text-link { min-height: 44px; }
+.home-page .memory-layout { padding-block: 45px; }
+.home-page .memory-copy h2 { font-size: 30px; }
+.home-page .memory-photos { height: 400px; }
+.home-page .memory-one { height: 290px; }
+.home-page .memory-two { height: 270px; }
+.home-review, .home-review .review-grid, .home-review .review-card { height: 100%; }
+.home-review .review-grid { display: block; }
+.home-review .review-card { padding: 24px; }
+.home-review .review-quote { font-size: 42px; }
+.home-review .review-card blockquote { font-size: 14px; line-height: 1.75; margin: 8px 0 20px; }
+.home-review .review-card figcaption a { min-height: 44px; }
+.home-page .faq-section .eyebrow { display: none; }
+.home-page .faq-section h2 { font-size: 30px; }
+.home-page .final-cta { margin-top: 12px; margin-bottom: 48px; }
+@media (max-width: 700px) {
+  .home-page .section { padding-block: 32px; }
+  .home-page .section-head { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .home-page .section-head h2 { font-size: 25px; }
+  .home-page .section-head > .text-link, .home-page .section-head > .button { margin: 0; }
+  .home-page .eyebrow { margin-bottom: 10px; }
+  .home-animation-price { font-size: 14px; margin: -4px 0 14px; gap: 0 8px; }
+  .home-page #home-characters .character-visual { height: 235px; padding: 14px 9px 0; }
+  .home-page #home-characters .character-info { padding: 14px 12px 18px; }
+  .home-page #home-characters .character-card-title { font-size: 15px; overflow-wrap: anywhere; }
+  .home-page #home-characters .character-info > p { font-size: 10px; }
+  .home-page .home-section-note { font-size: 12px; }
+  .home-page .home-season { margin-block: 24px; }
+  .home-page .home-season .season-photo { height: 320px; }
+  .home-page .home-season .season-copy { padding: 22px; }
+  .home-page .home-season .season-copy h2 { font-size: 26px; }
+  .home-page .home-season .season-copy > .eyebrow { margin-bottom: 8px; }
+  .home-page .home-season .season-price strong { font-size: 30px; }
+  .home-page .home-season .season-actions { gap: 10px; }
+  .home-page .memory-layout { padding-block: 32px; gap: 20px; }
+  .home-page .memory-copy h2 { font-size: 26px; }
+  .home-page .memory-photos { height: 330px; margin-block: 0; }
+  .home-page .memory-one { height: 250px; }
+  .home-page .memory-two { height: 220px; }
+  .home-review .review-card { padding: 22px; }
+  .home-page .faq-section { gap: 20px; }
+  .home-page .faq-section h2 { font-size: 26px; }
+  .home-page .faq-section .guarantee-card { margin-top: 18px; padding: 22px; }
+  .home-page .final-cta { margin-bottom: 32px; }
+}

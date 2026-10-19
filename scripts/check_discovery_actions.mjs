@@ -20,7 +20,7 @@ const result = await build({
     export { PackageCard, OfferingCard } from './frontend/src/components/cards';
     export { PackageComparison } from './frontend/src/components/package-comparison';
     export { NewYearFormats } from './frontend/src/components/new-year-formats';
-    export { HomeServiceNavigation } from './frontend/src/components/home-service-navigation';`, resolveDir: root, loader: 'tsx' },
+    export { HomePackageCard, HomeTransformerCard } from './frontend/src/components/home-photo-cards';`, resolveDir: root, loader: 'tsx' },
   bundle: true, write: false, format: 'cjs', platform: 'node', jsx: 'automatic', tsconfig: resolve(root, 'frontend/tsconfig.json'),
   plugins: [{ name: 'framework-stubs', setup(builder) {
     builder.onResolve({ filter: /^react(?:\/.*)?$/ }, args => ({ path: requireFrontend.resolve(args.path), external: true }));
@@ -34,7 +34,7 @@ const result = await build({
 });
 const bundle = resolve(root, '.local/header-tests/discovery-actions.bundle.cjs');
 await writeFile(bundle, result.outputFiles[0].text);
-const { ChooseButton, StoreProvider, useSelection, PackageCard, OfferingCard, PackageComparison, NewYearFormats, HomeServiceNavigation } = requireFrontend(bundle);
+const { ChooseButton, StoreProvider, useSelection, PackageCard, OfferingCard, PackageComparison, NewYearFormats, HomePackageCard, HomeTransformerCard } = requireFrontend(bundle);
 const host = createRoot(document.getElementById('root'));
 let selection, submits = 0, checks = 0;
 function Probe() { selection = useSelection(); return null; }
@@ -68,39 +68,10 @@ assert.ok(document.querySelector('[aria-label="Выбрать программу
 await render(h(NewYearFormats, { offering: { ...offering, prices: [{ ...offering.prices[0], code: 'eve-18' }] } }));
 assert.ok(document.querySelector('[aria-label="Обсудить 18:00 · 31 декабря"]'));
 for (const button of document.querySelectorAll('button[aria-label]')) assert.ok(button.getAttribute('aria-label').includes(button.textContent.trim())); checks++;
-const animation = { ...offering, slug: 'animation', kind: 'animation', duration_minutes: 75 };
-await render(h(HomeServiceNavigation, { offerings: [animation] }));
-assert.match(document.querySelector('.home-format-animation').textContent, /1 ч 15 мин/);
-assert.match(document.querySelector('.home-format-animation .home-format-price').textContent, /7\s654 ₽/);
-assert.equal(document.querySelectorAll('nav[aria-label="Направления праздников"] a').length, 3); checks++;
-const transformer = { ...offering, kind: 'transformer', slug: 'bumblebee', duration_minutes: 60 };
-const cheaperTransformer = { ...transformer, slug: 'iron-man', prices: [{ ...offering.prices[0], amount_rub: 3456 }] };
-const packageWithBackground = { ...offering, duration_minutes: 105, parts: [
-  { position: 1, title: 'Анимация', service_slug: 'animation', duration_minutes: 60, led_by_performer: true, is_approximate: false },
-  { position: 2, title: 'Шоу', service_slug: 'cotton-candy-show', duration_minutes: 30, led_by_performer: true, is_approximate: false },
-  { position: 3, title: 'Фоновая музыка', service_slug: null, duration_minutes: 15, led_by_performer: false, is_approximate: true },
-] };
-await render(h(HomeServiceNavigation, { offerings: [animation, transformer, cheaperTransformer, packageWithBackground] }));
-assert.match(document.querySelector('.home-format-transformer .home-format-price').textContent, /3\s456–7\s654 ₽/);
-assert.match(document.querySelector('.home-format-package').textContent, /1 ч 30 мин/);
-assert.doesNotMatch(document.querySelector('.home-format-package').textContent, /1 ч 45 мин/); checks++;
-await render(h(HomeServiceNavigation, { offerings: [{ ...animation, prices: [] }] }));
-assert.equal(document.querySelector('.home-format-animation .home-format-price').textContent, 'Цену уточним'); checks++;
-await render(h(HomeServiceNavigation, { offerings: [] }));
-assert.equal(document.querySelectorAll('nav a').length, 6);
-assert.deepEqual([...document.querySelectorAll('.home-format-price')].map(n => n.textContent), ['Цену уточним', 'Цену уточним', 'Цену уточним']); checks++;
+await render(h(HomePackageCard, { offering, offerings: [offering] }));
+assert.equal(document.querySelector('a[aria-label="Состав и условия пакета «Сладкий праздник»"]')?.getAttribute('href') || document.querySelector('a[href="/packages/sweet-vibe"]')?.getAttribute('href'), '/packages/sweet-vibe'); checks++;
 const page = await readFile(resolve(root, 'frontend/src/app/page.tsx'), 'utf8');
-assert.match(page, /href=\{bumblebee \? "\/transformers\/bumblebee" : "\/transformers"\} className="hero-offer"/);
-assert.match(page, /HomeServiceNavigation offerings=\{offerings\}/); checks++;
-const publishedReview = { author: 'Андрей', text: 'Актуальный отзыв из API.', source_label: 'Avito', source_url: 'https://www.avito.ru/brands/test-profile/all/' };
-await render(h(HomeServiceNavigation, { offerings: [animation], reviews: [publishedReview] }));
-assert.equal(document.querySelector('[data-choice-review] blockquote').textContent, publishedReview.text);
-assert.equal(document.querySelectorAll('[data-choice-support] details').length, 4);
-const supportAction = document.querySelector('[data-choice-support] button');
-await act(() => supportAction.click());
-assert.equal(selection.offering, ''); assert.equal(selection.character, ''); checks++;
-await render(h(HomeServiceNavigation, { offerings: [animation], reviews: [] }));
-assert.equal(document.querySelector('[data-choice-review]'), null);
-assert.equal(document.querySelectorAll('[data-choice-support] details').length, 4); checks++;
+assert.doesNotMatch(page, /HomeServiceNavigation|HomeChoiceSupport|ArticleCards/);
+assert.match(page, /PhotoCarousel/); checks++;
 await act(() => host.unmount()); dom.window.close();
-console.log(`${checks} discovery action checks passed (real selection store; catalogue-derived pricing; no network).`);
+console.log(`${checks} discovery action checks passed (real selection store; photo catalogue links; no network).`);
