@@ -1,35 +1,63 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Camera, MessageCircle } from "lucide-react";
 import { basePrice, duration, rubles, type Offering } from "@/lib/types";
+import { packageTiming } from "@/lib/packages";
+import { programmeRange } from "@/lib/programme-range";
+import { ChooseButton } from "./choose-button";
 import "./home-service-navigation.css";
 
-const directions = [
-  { href: "/transformers", title: "Трансформеры", detail: "Большие герои" },
-  { href: "/animators", title: "Аниматоры", detail: "Игры с героем" },
-  { href: "/packages", title: "Пакеты с шоу", detail: "Герой и шоу" },
-  { href: "/shows", title: "Все услуги", detail: "Шоу, фото и звук" },
-  { href: "/new-year", title: "Новый год", detail: "Дед Мороз и Снегурочка" },
-  { href: "/holidays", title: "Для группы", detail: "Сад, школа, выпускной" },
+const formats = [
+  {
+    kind: "animation", href: "/animators", title: "Аниматор с любимым героем", tag: "Для встречи с любимым персонажем",
+    description: "Тематические игры, задания и танцы. Вы выбираете героя, программу подбираем по возрасту детей.",
+    action: "Герои и программа", timeLabel: "Игры с героем",
+  },
+  {
+    kind: "transformer", href: "/transformers", title: "Большой герой + супергерой", tag: "Для встречи с большим героем",
+    description: "Бамблби, Оптимус или Железный человек вместе со вторым героем в обычном костюме. Игры, общение и фотографии.",
+    action: "Большие герои и цены", timeLabel: "Программа с двумя героями",
+  },
+  {
+    kind: "package", href: "/packages", title: "Аниматор + шоу", tag: "Для праздника с продолжением",
+    description: "Любимый герой и одно или несколько шоу в готовой программе. Сравните сладкую вату, опыты, серебряное и пенное шоу.",
+    action: "Сравнить пакеты", timeLabel: "Игры и шоу с ведущим",
+  },
 ];
 
-export function HomeServiceNavigation({ animation }: { animation?: Offering }) {
-  const animationPrice = animation ? basePrice(animation) : undefined;
-  const animationSummary = animation && animationPrice !== undefined
-    ? [animation.duration_minutes ? duration(animation.duration_minutes) : null, rubles(animationPrice)].filter(Boolean).join(" · ")
-    : null;
+function rangeSummary(items: Offering[], kind: string) {
+  const price = programmeRange(items.map(basePrice));
+  const times = items.map(item => {
+    if (kind === "package") { const timing = packageTiming(item); return { minutes: timing.active, approximate: timing.approximate }; }
+    return { minutes: item.duration_minutes, approximate: item.duration_is_approximate };
+  });
+  const time = programmeRange(times.map(item => item.minutes));
+  const timeLabel = (minutes: number) => `${times.some(item => item.minutes === minutes && item.approximate) ? "≈ " : ""}${duration(minutes)}`;
+  const number = new Intl.NumberFormat("ru-RU");
+  return {
+    price: price ? price.min === price.max ? rubles(price.min) : `${number.format(price.min)}–${rubles(price.max)}` : "Цену уточним",
+    time: time ? time.min === time.max ? timeLabel(time.min) : `${timeLabel(time.min)} — ${timeLabel(time.max)}` : "Время согласуем",
+  };
+}
+
+export function HomeServiceNavigation({ offerings }: { offerings: Offering[] }) {
   return <section id="home-services" className="container home-service-navigation" aria-labelledby="home-service-navigation-title">
-    <h2 id="home-service-navigation-title">Какой праздник вы ищете?</h2>
+    <div className="home-choice-heading"><span className="eyebrow">Сначала — формат праздника</span><h2 id="home-service-navigation-title">Что порадует <em>вашего ребёнка?</em></h2><p>Можно пригласить любимого героя, встретить большого супергероя или объединить игры и шоу. Вот чем отличаются программы.</p></div>
     <nav aria-label="Направления праздников">
       <ul className="home-service-navigation-list">
-        {directions.map(({ href, title, detail }) => <li key={href}>
-          <Link className="home-service-navigation-link" href={href}>
-            <strong>{title}</strong>
-            <span>{detail}</span>
-            <ArrowUpRight size={17} aria-hidden="true" />
-            {href === "/animators" && animationSummary && <small className="home-service-price">{animationSummary} · за программу</small>}
-          </Link>
-        </li>)}
+        {formats.map((format, index) => {
+          const summary = rangeSummary(offerings.filter(item => item.kind === format.kind), format.kind);
+          return <li key={format.kind} className={`home-format home-format-${format.kind}`}>
+            <div className="home-format-top"><span className="home-format-number" aria-hidden="true">0{index + 1}</span><span>{format.tag}</span></div>
+            <h3>{format.title}</h3><p className="home-format-description">{format.description}</p>
+            <dl className="home-format-facts"><div><dt>{format.timeLabel}</dt><dd>{summary.time}</dd></div><div><dt>Цена за базовую программу</dt><dd className="home-format-price">{summary.price}</dd></div></dl>
+            <Link className="button outline home-format-action" href={format.href}>{format.action}<ArrowUpRight size={18} aria-hidden="true" /></Link>
+          </li>;
+        })}
       </ul>
     </nav>
+    <p className="home-choice-terms">Фоновая музыка в пакетах не входит во время игр и шоу. Дополнения и выезд в удалённые районы согласуем до заказа.</p>
+    <div className="home-choice-help"><div><strong>Пока не знаете, что выбрать?</strong><p>Оставьте контакт — обсудим интересы ребёнка, дату и площадку. Заявка сама по себе не бронирует праздник.</p></div><ChooseButton className="button navy">Помогите выбрать</ChooseButton></div>
+    <nav className="home-other-formats" aria-label="Другие форматы праздника"><span>Особый повод?</span><Link href="/new-year">Дед Мороз и Снегурочка<ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/holidays">Для сада, школы и большой группы<ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/shows">Все услуги и дополнения<ArrowUpRight size={15} aria-hidden="true" /></Link></nav>
+    <div className="home-choice-proof"><span>Посмотрите, как всё бывает:</span><Link href="/gallery"><Camera size={17} aria-hidden="true" />Реальные фотографии</Link><Link href="/reviews"><MessageCircle size={17} aria-hidden="true" />Отзывы родителей</Link></div>
   </section>;
 }

@@ -69,13 +69,28 @@ await render(h(NewYearFormats, { offering: { ...offering, prices: [{ ...offering
 assert.ok(document.querySelector('[aria-label="Обсудить 18:00 · 31 декабря"]'));
 for (const button of document.querySelectorAll('button[aria-label]')) assert.ok(button.getAttribute('aria-label').includes(button.textContent.trim())); checks++;
 const animation = { ...offering, slug: 'animation', kind: 'animation', duration_minutes: 75 };
-await render(h(HomeServiceNavigation, { animation }));
-assert.match(document.querySelector('a[href="/animators"]').textContent, /1 ч 15 мин · 7\s654 ₽ · за программу/);
-assert.equal(document.querySelectorAll('.home-service-price').length, 1); checks++;
-await render(h(HomeServiceNavigation, { animation: { ...animation, prices: [] } })); assert.equal(document.querySelector('.home-service-price'), null); checks++;
-await render(h(HomeServiceNavigation, {})); assert.equal(document.querySelectorAll('nav a').length, 6); assert.equal(document.querySelector('.home-service-price'), null); checks++;
+await render(h(HomeServiceNavigation, { offerings: [animation] }));
+assert.match(document.querySelector('.home-format-animation').textContent, /1 ч 15 мин/);
+assert.match(document.querySelector('.home-format-animation .home-format-price').textContent, /7\s654 ₽/);
+assert.equal(document.querySelectorAll('nav[aria-label="Направления праздников"] a').length, 3); checks++;
+const transformer = { ...offering, kind: 'transformer', slug: 'bumblebee', duration_minutes: 60 };
+const cheaperTransformer = { ...transformer, slug: 'iron-man', prices: [{ ...offering.prices[0], amount_rub: 3456 }] };
+const packageWithBackground = { ...offering, duration_minutes: 105, parts: [
+  { position: 1, title: 'Анимация', service_slug: 'animation', duration_minutes: 60, led_by_performer: true, is_approximate: false },
+  { position: 2, title: 'Шоу', service_slug: 'cotton-candy-show', duration_minutes: 30, led_by_performer: true, is_approximate: false },
+  { position: 3, title: 'Фоновая музыка', service_slug: null, duration_minutes: 15, led_by_performer: false, is_approximate: true },
+] };
+await render(h(HomeServiceNavigation, { offerings: [animation, transformer, cheaperTransformer, packageWithBackground] }));
+assert.match(document.querySelector('.home-format-transformer .home-format-price').textContent, /3\s456–7\s654 ₽/);
+assert.match(document.querySelector('.home-format-package').textContent, /1 ч 30 мин/);
+assert.doesNotMatch(document.querySelector('.home-format-package').textContent, /1 ч 45 мин/); checks++;
+await render(h(HomeServiceNavigation, { offerings: [{ ...animation, prices: [] }] }));
+assert.equal(document.querySelector('.home-format-animation .home-format-price').textContent, 'Цену уточним'); checks++;
+await render(h(HomeServiceNavigation, { offerings: [] }));
+assert.equal(document.querySelectorAll('nav a').length, 6);
+assert.deepEqual([...document.querySelectorAll('.home-format-price')].map(n => n.textContent), ['Цену уточним', 'Цену уточним', 'Цену уточним']); checks++;
 const page = await readFile(resolve(root, 'frontend/src/app/page.tsx'), 'utf8');
 assert.match(page, /href=\{bumblebee \? "\/transformers\/bumblebee" : "\/transformers"\} className="hero-offer"/);
-assert.match(page, /HomeServiceNavigation animation=\{offerings.find/); checks++;
+assert.match(page, /HomeServiceNavigation offerings=\{offerings\}/); checks++;
 await act(() => host.unmount()); dom.window.close();
 console.log(`${checks} discovery action checks passed (real selection store; catalogue-derived pricing; no network).`);
