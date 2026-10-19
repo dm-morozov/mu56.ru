@@ -479,8 +479,35 @@ test('photo-first home keeps manual rails obvious and page scrolling natural', a
   }
   const track = page.locator('#home-transformers [data-carousel-track]');
   await track.scrollIntoViewIfNeeded();
+  // This jump comes from the review rail several screens below. Synchronise
+  // the compositor with the visible target before sending coordinate input.
+  await capture(page, info, 'vertical-scroll-start');
   const box = await track.boundingBox();
   const before = await page.evaluate(() => scrollY);
+  const scrollState = () => page.evaluate(() => ({
+    scrollY, active: document.activeElement?.id,
+    html: { overflow: getComputedStyle(document.documentElement).overflow, touch: getComputedStyle(document.documentElement).touchAction },
+    body: { overflow: getComputedStyle(document.body).overflow, touch: getComputedStyle(document.body).touchAction },
+    track: [...document.querySelectorAll('#home-transformers [data-carousel-track]')].map(node => ({
+      x: node.scrollLeft, y: node.scrollTop, height: node.clientHeight, scrollHeight: node.scrollHeight,
+      overflowX: getComputedStyle(node).overflowX, overflowY: getComputedStyle(node).overflowY,
+      snap: getComputedStyle(node).scrollSnapType, touch: getComputedStyle(node).touchAction,
+    })),
+  }));
+  const diagnostic = { before: await scrollState() };
+  await page.evaluate(() => {
+    window.__qaScrollEvents = [];
+    for (const type of ['touchstart', 'pointerdown', 'touchend', 'wheel']) {
+      document.addEventListener(type, event => {
+        window.__qaScrollEvents.push({ type, prevented: event.defaultPrevented,
+          path: event.composedPath().filter(node => node instanceof Element).map(node => ({
+            tag: node.tagName, id: node.id, class: node.className,
+            touch: getComputedStyle(node).touchAction, overscroll: getComputedStyle(node).overscrollBehavior,
+          })),
+        });
+      }, { capture: true, passive: true });
+    }
+  });
   if (page.viewportSize().width <= 700) {
     // Touch emulation uses the phone's actual gesture, not a desktop wheel.
     const viewport = page.viewportSize();
@@ -499,7 +526,13 @@ test('photo-first home keeps manual rails obvious and page scrolling natural', a
     await page.mouse.move(box.x + box.width / 2, Math.max(100, box.y + 80));
     await page.mouse.wheel(0, 250);
   }
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 100);
+  try {
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 100);
+  } finally {
+    diagnostic.after = await scrollState();
+    diagnostic.events = await page.evaluate(() => window.__qaScrollEvents);
+    await writeFile(info.outputPath('vertical-scroll-state.json'), JSON.stringify(diagnostic, null, 2));
+  }
 });
 
 test('photo catalogue paths preserve details, enquiries and return navigation', async ({ page }, info) => {
