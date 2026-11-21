@@ -28,6 +28,7 @@ export default async function AnimatorsPage() {
   const favourites = ["spider-man", "tiktok", "captain-america", "chase"];
   const characters = favourites.flatMap(slug => animation.characters.filter(hero => hero.slug === slug));
   const packages = ["full-party", "ice-breath", "sweet-vibe"].flatMap(slug => offerings.filter(item => item.kind === "package" && item.slug === slug));
+  const turtle = animation.characters.find(hero => hero.slug === "ninja-turtle" && hero.availability !== "unavailable");
   const photos = ["spider-man", "ninja-turtle", "alice"].flatMap(slug => animation.characters.find(hero => hero.slug === slug)?.photos.slice(0, 1) || []);
   const leadPhoto = { url: "/media/animation-spider-man-hug.webp", alt: "Ребёнок обнимает Человека-паука в новом костюме на празднике" };
 
@@ -38,10 +39,10 @@ export default async function AnimatorsPage() {
         <Breadcrumbs current={{ label: "Аниматоры", href: "/animators" }} />
         <span className="eyebrow">Любимый герой. Настоящие впечатления.</span>
         <h1>Аниматоры на детский праздник <em>в Оренбурге</em></h1>
-        <p>Пусть любимый герой станет частью дня рождения. Приедем на вашу площадку, познакомимся с детьми и увлечём их играми, заданиями и танцами.</p>
+        <p>Пригласите аниматора на день рождения ребёнка. Приедем к вам домой, в кафе или детский сад в Оренбурге. Герой познакомится с гостями и проведёт игры и задания по возрасту.</p>
         <div className="animation-tariff"><strong>{price ? rubles(price) : "Стоимость уточним"}</strong><span>{duration(animation.duration_minutes)} · {animation.included_performers === 1 ? "один аниматор" : `${animation.included_performers} аниматора`} · герой на выбор</span></div>
         <div className="hero-actions"><ChooseButton offering={animation.slug}>Обсудить праздник</ChooseButton><Link href="/characters" className="button outline">Выбрать героя</Link></div>
-        <p className="animation-venue">Дома, в кафе, саду, школе, детской студии или на улице. Удалённый выезд рассчитываем отдельно.</p>
+        <p className="animation-venue">Также выезжаем в школы, детские студии и на открытые площадки. Стоимость дороги в удалённые районы согласуем по адресу.</p>
       </div>
       <div className="animation-hero-photo">
         <Image src={leadPhoto?.url || characterImage("spider-man")!} alt={leadPhoto?.alt || "Аниматор Человек-паук"} width={1800} height={1200} sizes="(max-width: 680px) 100vw, 50vw" preload />
@@ -57,7 +58,8 @@ export default async function AnimatorsPage() {
     <section id="heroes" className="container animation-characters" aria-labelledby="animation-heroes-title">
       <div className="section-head"><div><span className="eyebrow">Кого ждёт ваш ребёнок?</span><h2 id="animation-heroes-title">Герои для вашего <em>праздника</em></h2></div><p>Четыре варианта для знакомства — остальные герои есть в каталоге. Посмотрите реальные костюмы и описания. Доступность уточним для вашей даты.</p></div>
       <div className="character-grid">{characters.map((hero, index) => <CharacterCard key={hero.slug} character={hero} index={index} />)}</div>
-      <div className="animation-section-links"><Link className="button outline" href="/characters">Посмотреть всех персонажей</Link><Link className="text-link" href="/transformers">Хотите большого робота? Посмотрите трансформеров →</Link></div>
+      {turtle && <p>Ребёнок любит Черепашек-ниндзя? <Link className="text-link" href={`/characters/${turtle.slug}`}>Посмотрите программу с Леонардо →</Link></p>}
+      <div className="animation-section-links"><Link className="button outline" href="/characters">Посмотреть всех персонажей</Link><Link className="text-link" href="/transformers">Трансформеры на день рождения →</Link></div>
     </section>
 
     <div className="animation-packages-band"><section className="container animation-packages" aria-labelledby="animation-packages-title">
