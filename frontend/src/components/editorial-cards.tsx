@@ -4,7 +4,18 @@ import { Article, Review, articleDate } from "@/lib/editorial";
 import { articleStories } from "@/lib/article-stories";
 
 export function ReviewCards({ reviews }: { reviews: Review[] }) {
-  return <div className="review-grid">{reviews.map((review, index) => <figure className="review-card" key={`${review.author}-${index}`}><span className="review-quote" aria-hidden="true">“</span><blockquote>{review.text}</blockquote><figcaption><strong>{review.author}</strong>{review.source_url ? <a href={review.source_url}>Профиль с отзывами на {review.source_label} <ArrowUpRight size={13} /></a> : <span>{review.source_label}</span>}</figcaption></figure>)}</div>;
+  return <div className="review-grid">{reviews.map((review, index) => <ReviewCard key={`${review.author}-${index}`} review={review} />)}</div>;
+}
+
+export function ReviewCard({ review }: { review: Review }) {
+  return <figure className="review-card">
+    <span className="review-quote" aria-hidden="true">“</span>
+    <blockquote>{review.text}</blockquote>
+    <figcaption>
+      <strong>{review.author}</strong>
+      {review.source_url ? <a href={review.source_url}>Профиль с отзывами на {review.source_label} <ArrowUpRight size={13} /></a> : <span>{review.source_label}</span>}
+    </figcaption>
+  </figure>;
 }
 export function ArticleCards({ articles, headingLevel = 2, startIndex = 0 }: { articles: Article[]; headingLevel?: 2 | 3; startIndex?: number }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
