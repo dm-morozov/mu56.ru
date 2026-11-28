@@ -51,8 +51,8 @@ export default async function AnimatorsPage() {
     </section></div>
 
     <div className="animation-program-band"><section className="container animation-program" aria-labelledby="animation-program-title">
-      <div className="section-head"><div><span className="eyebrow">У каждого праздника свой темп</span><h2 id="animation-program-title">Игры, в которые хочется <em>включиться</em></h2></div><p>Работаем с детьми от 2 до 16 лет. Образ, сложность заданий и темп подбираем по возрасту и интересам вашей компании.</p></div>
-      <div className="animation-steps"><article><span>01</span><h3>Знакомимся</h3><p>Помогаем освоиться рядом с героем. Если ребёнок стесняется, начинаем спокойно и не заставляем участвовать.</p></article><article><span>02</span><h3>Играем вместе</h3><p>Тематические задания, подвижные игры и танцы. Меняем подачу по реакции детей и возможностям площадки.</p></article><article><span>03</span><h3>Сохраняем впечатления</h3><p>Общаемся с героем и оставляем время для ваших фотографий. Профессионального фотографа можно обсудить отдельно.</p></article></div>
+      <div className="section-head"><div><span className="eyebrow">У каждого праздника свой темп</span><h2 id="animation-program-title">Что входит в <em>базовую программу</em></h2></div><p>Работаем с детьми от 2 до 16 лет. Образ, сложность заданий и темп подбираем по возрасту и интересам вашей компании.</p></div>
+      <div className="animation-steps"><article><span>01</span><h3>Знакомимся</h3><p>Помогаем освоиться рядом с героем. Если ребёнок стесняется, начинаем спокойно и не заставляем участвовать.</p></article><article><span>02</span><h3>Играем вместе</h3><p>Тематические задания, игры с реквизитом и танцы под музыку. Подбираем игры по реакции детей и возможностям площадки.</p></article><article><span>03</span><h3>Поздравляем и фотографируемся</h3><p>Герой поздравляет именинника. Оставляем время, чтобы вы могли сфотографировать детей с героем. Профессионального фотографа можно обсудить отдельно.</p></article></div>
     </section></div>
 
     <section id="heroes" className="container animation-characters" aria-labelledby="animation-heroes-title">
