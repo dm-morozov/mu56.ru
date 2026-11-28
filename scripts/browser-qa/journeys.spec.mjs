@@ -176,7 +176,7 @@ test('catalogue comparison context survives Back and Forward', async ({ page }, 
   const catalogScroll = await page.evaluate(() => scrollY);
   await heroLink.click();
   await expect(page).toHaveURL(/\/characters\/spider-man$/);
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', 'Аниматор Человек-паук на день рождения в Оренбурге. Игровая миссия, фотографии костюма, программа и стоимость. Выезд на вашу площадку.');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', 'Аниматор Человек-паук на день рождения в Оренбурге — 3 500 ₽, 1 ч. Игровая миссия с супергероем у вас дома или на площадке.');
   await page.goBack();
   await expect(page).toHaveURL(/\/characters$/);
   await expect(search).toHaveValue('паук');
