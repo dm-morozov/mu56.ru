@@ -21,15 +21,16 @@ export default async function DetailPage({ params, searchParams }: { params: Pro
   const requestedOccasion = typeof query.occasion === "string" ? getOccasion(query.occasion) : undefined;
   const occasion = item.kind === "package" && requestedOccasion?.programs.some(program => program === item.slug) ? requestedOccasion : undefined;
   const isTransformer = item.kind === "transformer";
+  let intro = "Выберите состав праздника и обсудите с нами дату и площадку.";
+  if (isTransformer && slug === "bumblebee") intro = offeringSearchDescription(item);
+  if (isTransformer && slug === "optimus-prime") intro = "Пригласите аниматора Оптимуса Прайма на день рождения в Оренбурге. Посмотрите фото костюма, выберите напарника для большого робота и узнайте, хватит ли места дома.";
   return <main id="main">
     <StructuredData data={serviceSchema(item, item.description || `${item.name} на вашей площадке в Оренбурге.`)} />
     <PageIntro
       path={`/${section}/${slug}`}
       parents={[{ label: ({ packages: "Пакеты", transformers: "Трансформеры", shows: "Услуги", extras: "Дополнения к празднику" } as Record<string, string>)[section], href: `/${section}` }, ...(occasion ? [{ label: occasion.title, href: `/holidays/${occasion.slug}` }] : [])]}
       title={item.name}
-      description={slug === "optimus-prime" && isTransformer
-        ? "Пригласите аниматора Оптимуса Прайма на день рождения в Оренбурге. Посмотрите фото костюма, выберите напарника для большого робота и узнайте, хватит ли места дома."
-        : "Выберите состав праздника и обсудите с нами дату и площадку."}
+      description={intro}
     />
     <OfferingDetails offering={item} allOfferings={offerings} occasion={occasion} />
     {isTransformer && <CharacterGallery photos={item.characters.find(c => c.slug === item.slug)?.photos} name={item.name} />}

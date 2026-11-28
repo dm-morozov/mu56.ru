@@ -1,4 +1,4 @@
-import type { Offering } from "./types";
+import { basePrice, duration, rubles, type Offering } from "./types";
 
 // Describe the service in search while keeping the catalogue's product name in the UI.
 const searchTitles: Record<string, string> = {
@@ -17,6 +17,14 @@ export function offeringSearchTitle(item: Offering): string {
 }
 
 export function offeringSearchDescription(item: Offering): string {
+  if (item.kind === "transformer" && item.slug === "bumblebee") {
+    const price = basePrice(item);
+    const length = item.duration_minutes
+      ? `${item.duration_is_approximate ? "около " : ""}${duration(item.duration_minutes)}`
+      : undefined;
+    if (!price) return `Бамблби и второй герой на выбор приедут на праздник в Оренбурге. ${length ? `Длительность — ${length}. ` : ""}Стоимость уточним.`;
+    return `Бамблби и второй герой на выбор — ${rubles(price)}${length ? `, ${length}` : ""}. Оба героя приедут на ваш праздник в Оренбурге.`;
+  }
   const composition = item.kind === "package"
     ? item.parts.filter(part => part.led_by_performer).map(part => part.title).join(", ")
     : item.kind === "transformer"
