@@ -4,12 +4,13 @@ import { getReviews } from "@/lib/editorial";
 
 // Match the chosen published stories by their defining details, without copying review text.
 const stories = new Map([
+  ["yard-party", { title: "Как прошёл праздник с Бамблби и Человеком-пауком во дворе", matches: [/бамблби/iu, /человека[\s-]+паука/iu, /на улице возле дома/iu] }],
   ["bumblebee", { title: "Бамблби на дне рождения на футбольном поле", matches: [/бамблби/iu, /футбольном поле/iu] }],
   ["optimus-prime", { title: "Оптимус Прайм и Человек-паук на празднике", matches: [/оптимус/iu, /человек[\s+-]+паук/iu] }],
 ]);
 
-export async function TransformerReview({ slug }: { slug: string }) {
-  const story = stories.get(slug);
+export async function TransformerReview({ storyKey }: { storyKey: string }) {
+  const story = stories.get(storyKey);
   if (!story) return null;
 
   const reviews = await getReviews().catch(() => []);

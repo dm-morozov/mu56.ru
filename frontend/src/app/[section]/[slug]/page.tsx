@@ -36,7 +36,7 @@ export default async function DetailPage({ params, searchParams }: { params: Pro
     {isTransformer && <CharacterGallery photos={item.characters.find(c => c.slug === item.slug)?.photos} name={item.name} />}
     {offeringGalleries[item.slug] && <PhotoGallery photos={offeringGalleries[item.slug]} title={`${item.name} на праздниках`} description="Настоящие фотографии из нашего архива: от первого удара до сладкого финала." />}
     {isTransformer && <>
-      <TransformerReview slug={item.slug} />
+      <TransformerReview storyKey={item.slug} />
       <ProgramQuestions program="transformers" />
     </>}
     <ProgramReading offering={item} />
