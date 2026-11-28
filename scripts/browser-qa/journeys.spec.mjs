@@ -113,10 +113,7 @@ test('home consent, programme discovery and menu recovery', async ({ page }, inf
   expect(choice.choice).toBe('denied');
   expect(choice.expiry - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   await capture(page, info, 'home-dismissed');
-  // Locate the factual card independently of decorative home copy.
-  const animator = page.locator('.home-format-animation');
-  expect((await animator.innerText()).replace(/\s/g, '')).toContain('3500₽');
-  await page.locator('#home-services').scrollIntoViewIfNeeded();
+  await page.locator('#transformers').scrollIntoViewIfNeeded();
   await capture(page, info, 'home-programme-navigation');
   await expect(page.locator('main a[href="/transformers/bumblebee"]').first()).toBeAttached();
   if (page.viewportSize().width <= 800) {
@@ -300,7 +297,7 @@ test('animator and Bumblebee landing layouts', async ({ page }, info) => {
 });
 
 
-test('three programme formats make price and next step explicit', async ({ page }, info) => {
+test('homepage links directly to transformer programmes', async ({ page }, info) => {
   await page.goto('/');
   await dismissAnalytics(page);
   const heroHelp = page.getByRole('button', { name: 'Помогите выбрать праздник', exact: true });
@@ -310,32 +307,17 @@ test('three programme formats make price and next step explicit', async ({ page 
   await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
   await (await visibleClose(page)).click();
   await expect(heroHelp).toBeFocused();
-  await page.getByRole('link', { name: 'Сравнить форматы', exact: true }).click();
-  await expect(page).toHaveURL(/#home-services$/);
-  await expect(page.locator('.home-format')).toHaveCount(3);
-  const normalize = text => text.replace(/\s/g, '');
-  expect(normalize(await page.locator('.home-format-animation').innerText())).toContain('3500₽');
-  expect(normalize(await page.locator('.home-format-transformer').innerText())).toContain('5800–6200₽');
-  await expect(page.locator('.home-format-package')).toContainText('Игры и шоу с ведущим');
-  await expect(page.locator('.home-choice-terms')).toContainText('выезд в удалённые районы');
-  for (const kind of ['animation', 'transformer', 'package']) {
-    const card = page.locator(`.home-format-${kind}`);
-    await card.scrollIntoViewIfNeeded();
-    await noOverflow(page);
-    await capture(page, info, `home-format-${kind}`);
-    const link = card.getByRole('link');
-    const box = await link.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-  }
-  const help = page.getByRole('button', { name: 'Помогите выбрать', exact: true });
-  await help.click();
-  await expect(dialog).toBeVisible();
-  await (await visibleClose(page)).click();
-  await expect(help).toBeFocused();
-  await expect(page.locator('.home-choice-proof a[href="/gallery"]')).toBeAttached();
-  await expect(page.locator('.home-choice-proof a[href="/reviews"]')).toBeAttached();
-  await page.locator('.home-format-package').getByRole('link').click();
-  await expect(page).toHaveURL(/\/packages$/);
+  await page.getByRole('link', { name: 'Смотреть программы', exact: true }).click();
+  await expect(page).toHaveURL(/#transformers$/);
+  await expect(page.locator('#home-services')).toHaveCount(0);
+  const transformers = page.locator('#transformers');
+  await expect(transformers.locator('.transformer-card')).toHaveCount(3);
+  const bumblebee = transformers.getByRole('heading', { name: /Бамблби/ }).getByRole('link');
+  await bumblebee.scrollIntoViewIfNeeded();
+  await noOverflow(page);
+  await capture(page, info, 'home-transformer-programmes');
+  await bumblebee.click();
+  await expect(page).toHaveURL(/\/transformers\/bumblebee$/);
 });
 
 test('package overview leads to a decision before the long timeline', async ({ page }, info) => {
@@ -406,53 +388,6 @@ test('package decision summary preserves group sound and venue conditions', asyn
   await silverCta.scrollIntoViewIfNeeded();
   await noOverflow(page);
   await capture(page, info, 'package-silver-conditions');
-});
-
-test('early trust and choice criteria keep help available without a quiz', async ({ page }, info) => {
-  await page.goto('/');
-  await dismissAnalytics(page);
-  const support = page.locator('[data-choice-support]');
-  const lastFormat = await page.locator('.home-format-package').boundingBox();
-  const supportBox = await support.boundingBox();
-  expect(supportBox.y).toBeGreaterThan(lastFormat.y + lastFormat.height);
-  const review = support.locator('[data-choice-review]');
-  await expect(review.locator('blockquote')).toContainText('Замечательные аниматоры!');
-  await expect(review.locator('figcaption')).toContainText('Андрей');
-  const source = review.getByRole('link', { name: 'Профиль с отзывами на Авито', exact: true });
-  await expect(source).toHaveAttribute('href', /^https:\/\/www\.avito\.ru\/brands\//);
-  await expect(source).toHaveAttribute('target', '_blank');
-  await expect(source).toHaveAttribute('rel', /noopener/);
-  await expect(support.locator('input, select, textarea')).toHaveCount(0);
-  await expect(support.locator('details')).toHaveCount(4);
-  await expect(support.locator('details[open]')).toHaveCount(0);
-  await support.scrollIntoViewIfNeeded();
-  await noOverflow(page);
-  await capture(page, info, 'early-trust-and-choice');
-  for (const details of await support.locator('details').all()) {
-    const summary = details.locator('summary');
-    const box = await summary.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-    await summary.focus();
-    await summary.press('Enter');
-    await expect(details).toHaveAttribute('open', '');
-    await noOverflow(page);
-    await summary.press('Enter');
-    await expect(details).not.toHaveAttribute('open', '');
-  }
-  const guide = support.getByRole('link', { name: /выбрать программу/i });
-  await expect(guide).toHaveAttribute('href', '/articles/kak-vybrat-programmu');
-  const help = support.getByRole('button', { name: 'Помогите выбрать', exact: true });
-  await help.click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('input[name="offering"]')).toHaveValue('');
-  await (await visibleClose(page)).click();
-  await expect(help).toBeFocused();
-  await guide.click();
-  await expect(page).toHaveURL(/\/articles\/kak-vybrat-programmu$/);
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.goBack();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('dialog')).not.toBeVisible();
 });
 
 
