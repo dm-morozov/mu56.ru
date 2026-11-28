@@ -26,6 +26,7 @@ docs/internal/
 scraper/
 *.pdf
 *.txt
+!/frontend/public/llms.txt
 !requirements.txt
 !backend/requirements.txt
 Дополнительные фото для сайта/
