@@ -17,9 +17,17 @@ import { absoluteUrl, characterCanonical, pageMetadata } from "@/lib/seo";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params; const character = (await getCharacters()).find(c => c.slug === slug);
   if (!character) return {title:"Персонаж не найден"};
-  const description = slug === "spider-man"
-    ? "Аниматор Человек-паук на день рождения в Оренбурге. Игровая миссия, фотографии костюма, программа и стоимость. Выезд на вашу площадку."
-    : `${character.name} на день рождения и детский праздник в Оренбурге. ${character.description.split("\n")[0]}`;
+  let description = `${character.name} на день рождения и детский праздник в Оренбурге. ${character.description.split("\n")[0]}`;
+  if (slug === "spider-man" || slug === "ninja-turtle") {
+    const animation = (await getOfferings()).find(item =>
+      item.kind === "animation" && item.characters.some(hero => hero.slug === slug)
+    );
+    const price = animation && basePrice(animation);
+    const terms = [price && rubles(price), animation?.duration_minutes && duration(animation.duration_minutes)].filter(Boolean).join(", ");
+    const subject = slug === "ninja-turtle" ? "Аниматор Черепашка-ниндзя Леонардо" : "Аниматор Человек-паук";
+    const story = slug === "ninja-turtle" ? "Дети помогают Леонардо защитить город от Шреддера." : "Игровая миссия с супергероем у вас дома или на площадке.";
+    description = `${subject} на день рождения в Оренбурге${terms ? ` — ${terms}` : ""}. ${story}`;
+  }
   const metadata = pageMetadata(`Аниматор ${character.name} в Оренбурге`, description, characterCanonical(slug));
   const image = characterImage(slug);
   if (image) metadata.openGraph.images = [{url:absoluteUrl(image),alt:character.name}];

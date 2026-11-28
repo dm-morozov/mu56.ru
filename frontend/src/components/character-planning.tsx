@@ -16,10 +16,14 @@ export function CharacterPlanning({character, offerings}: {character:Character; 
   const timing = readyPackage ? packageTiming(readyPackage) : undefined;
   const activities = readyPackage?.parts.filter(part => part.led_by_performer).map(part => part.title).join("; ");
   const partners = character.slug === "spider-man" && character.availability !== "unavailable"
-    ? spiderManPartners.filter(partner => offerings.some(item =>
+    ? spiderManPartners.flatMap(partner => {
+      const program = offerings.find(item =>
         item.kind === "transformer" && item.slug === partner.slug && item.availability !== "unavailable" &&
+        item.included_performers === 2 &&
         item.characters.some(hero => hero.slug === character.slug && hero.availability !== "unavailable"),
-      ))
+      );
+      return program ? [{ ...partner, price: basePrice(program) }] : [];
+    })
     : [];
   return <section className="container character-planning" aria-labelledby="character-planning-title">
     <div className="section-head"><div><span className="eyebrow">Герой выбран. Что дальше?</span><h2 id="character-planning-title">Добавьте празднику <em>впечатлений</em></h2></div><p>Сначала встреча с героем, затем любимое шоу. Выберите добавку — состав и итог увидите в конструкторе.</p></div>
@@ -29,7 +33,9 @@ export function CharacterPlanning({character, offerings}: {character:Character; 
     <div className="character-parent-help"><div><h2>Перед встречей с героем</h2>
       {partners.length > 0 && <details>
         <summary>Можно пригласить Человека-паука вместе с трансформером?</summary>
-        <p>Да. Подойдёт программа с {partners.map((partner, index) => <span key={partner.slug}>{index > 0 && " или "}<Link className="text-link" href={`/transformers/${partner.slug}`}>{partner.name}</Link></span>)}. При заказе выберите «Человек-паук» в поле «Второй герой».</p>
+        <p>Человек-паук приезжает вторым героем. Выберите программу для пары:</p>
+        <ul>{partners.map(partner => <li key={partner.slug}><Link className="text-link" href={`/transformers/${partner.slug}`}>С {partner.name}{partner.price ? ` — ${rubles(partner.price)}` : ""}</Link></li>)}</ul>
+        <p>При заказе выберите «Человек-паук» в поле «Второй герой».</p>
       </details>}
       <details><summary>Где можно провести праздник?</summary><p>Выезжаем домой, в кафе, детские сады, школы, детские студии и на открытые площадки в Оренбурге. Пространство, погоду для праздника на улице и формат игр обсуждаем заранее. Удалённый выезд рассчитывается отдельно.</p></details><details><summary>Если ребёнок стесняется?</summary><p>Начинаем с аккуратного знакомства и спокойных игр, затем постепенно повышаем темп. Программу подбираем по возрасту и реакции детей; принуждать ребёнка участвовать не нужно.</p></details><details><summary>Для какого возраста и компании?</summary><p>Работаем с детьми от 2 до 16 лет. Формат зависит от возраста, интересов и числа гостей: для большой компании отдельно согласуем количество ведущих и звуковое оборудование.</p></details><details><summary>Что происходит после отправки заявки?</summary><p>Проверим возможность выезда на вашу дату, согласуем героя, состав программы и площадку. Отправка заявки сама по себе не бронирует дату; итоговую стоимость и выезд подтвердим до праздника.</p></details></div><aside><span className="eyebrow">Поможем подготовиться</span><Link href="/articles/kak-vybrat-programmu">Аниматор или пакет с шоу: как выбрать программу →</Link><Link href="/articles/esli-rebenok-stesnyaetsya">Если ребёнок стесняется аниматора →</Link><Link href="/characters">Посмотреть других персонажей →</Link></aside></div>
   </section>;
