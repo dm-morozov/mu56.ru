@@ -25,6 +25,8 @@ export default async function AnimatorsPage() {
   const animation = offerings.find(item => item.kind === "animation" && item.slug === "animation");
   if (!animation) notFound();
   const price = basePrice(animation);
+  const bumblebee = offerings.find(item => item.kind === "transformer" && item.slug === "bumblebee" && item.availability !== "unavailable" && item.included_performers === 2);
+  const bumblebeePrice = bumblebee && basePrice(bumblebee);
   const favourites = ["spider-man", "tiktok", "captain-america", "chase"];
   const characters = favourites.flatMap(slug => animation.characters.filter(hero => hero.slug === slug));
   const packages = ["full-party", "ice-breath", "sweet-vibe"].flatMap(slug => offerings.filter(item => item.kind === "package" && item.slug === slug));
@@ -42,6 +44,7 @@ export default async function AnimatorsPage() {
         <p>Пригласите аниматора на день рождения ребёнка. Приедем к вам домой, в кафе или детский сад в Оренбурге. Герой познакомится с гостями и проведёт игры и задания по возрасту.</p>
         <div className="animation-tariff"><strong>{price ? rubles(price) : "Стоимость уточним"}</strong><span>{duration(animation.duration_minutes)} · {animation.included_performers === 1 ? "один аниматор" : `${animation.included_performers} аниматора`} · герой на выбор</span></div>
         <div className="hero-actions"><ChooseButton offering={animation.slug}>Обсудить праздник</ChooseButton><Link href="/characters" className="button outline">Выбрать героя</Link></div>
+        {bumblebee && <p><Link href="/transformers/bumblebee" className="text-link">Большой Бамблби со вторым героем{bumblebeePrice ? ` — ${rubles(bumblebeePrice)}` : ""}{bumblebee.duration_minutes ? ` · ${duration(bumblebee.duration_minutes)}` : ""} →</Link></p>}
         <p className="animation-venue">Также выезжаем в школы, детские студии и на открытые площадки. Стоимость дороги в удалённые районы согласуем по адресу.</p>
       </div>
       <div className="animation-hero-photo">
