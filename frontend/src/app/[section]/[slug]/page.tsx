@@ -11,6 +11,7 @@ import { ProgramQuestions } from "@/components/program-questions";
 import { getOccasion } from "@/lib/occasions";
 import { offeringSearchTitle, offeringSearchDescription } from "@/lib/offering-seo";
 import { ProgramReading } from "@/components/program-reading";
+import { TransformerReview } from "@/components/transformer-review";
 const kinds: Record<string, string> = { packages: "package", transformers: "transformer", shows: "show", extras: "extra" };
 export async function generateMetadata({ params }: { params: Promise<{ section: string; slug: string }> }) { const { section, slug } = await params; const item = (await getOfferings()).find(p => p.slug === slug && p.kind === kinds[section]); if (!item) return {title:"Программа не найдена"}; return pageMetadata(offeringSearchTitle(item), offeringSearchDescription(item), `/${section}/${slug}`); }
 export default async function DetailPage({ params, searchParams }: { params: Promise<{ section: string; slug: string }>; searchParams: Promise<{ occasion?: string | string[] }> }) {
@@ -19,5 +20,24 @@ export default async function DetailPage({ params, searchParams }: { params: Pro
   const query = await searchParams;
   const requestedOccasion = typeof query.occasion === "string" ? getOccasion(query.occasion) : undefined;
   const occasion = item.kind === "package" && requestedOccasion?.programs.some(program => program === item.slug) ? requestedOccasion : undefined;
-  return <main id="main"><StructuredData data={serviceSchema(item, item.description || `${item.name} на вашей площадке в Оренбурге.`)} /><PageIntro path={`/${section}/${slug}`} parents={[{ label: ({ packages: "Пакеты", transformers: "Трансформеры", shows: "Услуги", extras: "Дополнения к празднику" } as Record<string, string>)[section], href: `/${section}` }, ...(occasion ? [{ label: occasion.title, href: `/holidays/${occasion.slug}` }] : [])]} title={item.name} description={slug === "optimus-prime" && item.kind === "transformer" ? "Пригласите аниматора Оптимуса Прайма на день рождения в Оренбурге. Посмотрите фото костюма, выберите напарника для большого робота и узнайте, хватит ли места дома." : "Выберите состав праздника и обсудите с нами дату и площадку."} /><OfferingDetails offering={item} allOfferings={offerings} occasion={occasion} />{item.kind === "transformer" && <CharacterGallery photos={item.characters.find(c => c.slug === item.slug)?.photos} name={item.name} />}{offeringGalleries[item.slug] && <PhotoGallery photos={offeringGalleries[item.slug]} title={`${item.name} на праздниках`} description="Настоящие фотографии из нашего архива: от первого удара до сладкого финала." />}{item.kind === "transformer" && <ProgramQuestions program="transformers" />}<ProgramReading offering={item} /></main>;
+  const isTransformer = item.kind === "transformer";
+  return <main id="main">
+    <StructuredData data={serviceSchema(item, item.description || `${item.name} на вашей площадке в Оренбурге.`)} />
+    <PageIntro
+      path={`/${section}/${slug}`}
+      parents={[{ label: ({ packages: "Пакеты", transformers: "Трансформеры", shows: "Услуги", extras: "Дополнения к празднику" } as Record<string, string>)[section], href: `/${section}` }, ...(occasion ? [{ label: occasion.title, href: `/holidays/${occasion.slug}` }] : [])]}
+      title={item.name}
+      description={slug === "optimus-prime" && isTransformer
+        ? "Пригласите аниматора Оптимуса Прайма на день рождения в Оренбурге. Посмотрите фото костюма, выберите напарника для большого робота и узнайте, хватит ли места дома."
+        : "Выберите состав праздника и обсудите с нами дату и площадку."}
+    />
+    <OfferingDetails offering={item} allOfferings={offerings} occasion={occasion} />
+    {isTransformer && <CharacterGallery photos={item.characters.find(c => c.slug === item.slug)?.photos} name={item.name} />}
+    {offeringGalleries[item.slug] && <PhotoGallery photos={offeringGalleries[item.slug]} title={`${item.name} на праздниках`} description="Настоящие фотографии из нашего архива: от первого удара до сладкого финала." />}
+    {isTransformer && <>
+      <TransformerReview slug={item.slug} />
+      <ProgramQuestions program="transformers" />
+    </>}
+    <ProgramReading offering={item} />
+  </main>;
 }
