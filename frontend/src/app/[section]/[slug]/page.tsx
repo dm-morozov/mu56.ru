@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getOfferings } from "@/lib/catalog";
 import { OfferingDetails } from "@/components/offering-details";
 import { PageIntro } from "@/components/page-intro";
@@ -34,6 +35,7 @@ export default async function DetailPage({ params, searchParams }: { params: Pro
     />
     <OfferingDetails offering={item} allOfferings={offerings} occasion={occasion} />
     {isTransformer && <CharacterGallery photos={item.characters.find(c => c.slug === item.slug)?.photos} name={item.name} />}
+    {isTransformer && (slug === "bumblebee" || slug === "optimus-prime") && <p className="container"><Link href="/transformers#video" className="text-link">Посмотреть видео праздника с Бамблби и Оптимусом →</Link></p>}
     {offeringGalleries[item.slug] && <PhotoGallery photos={offeringGalleries[item.slug]} title={`${item.name} на праздниках`} description="Настоящие фотографии из нашего архива: от первого удара до сладкого финала." />}
     {isTransformer && <>
       <TransformerReview storyKey={item.slug} />

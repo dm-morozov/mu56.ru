@@ -1,0 +1,18 @@
+.film {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.film video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  background: var(--navy);
+}
+
+.film figcaption {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
