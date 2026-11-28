@@ -6,6 +6,7 @@ import { PageIntro } from "@/components/page-intro";
 import { PackageComparison } from "@/components/package-comparison";
 import { PackageOverview } from "@/components/package-overview";
 import { TransformerReview } from "@/components/transformer-review";
+import { TransformerVideo } from "@/components/transformer-video";
 import { ProgramQuestions } from "@/components/program-questions";
 
 import { sortPackages } from "@/lib/packages";
@@ -28,6 +29,6 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const catalogItems = section === "shows" ? items.filter(item => item.kind !== "transformer" || item === firstTransformer) : items;
   const offerings = info.kind === "package" ? sortPackages(catalogItems) : catalogItems;
   return <main id="main"><PageIntro path={`/${section}`} breadcrumbLabel={({ transformers: "Трансформеры", packages: "Пакеты", shows: "Услуги", extras: "Дополнения к празднику" } as Record<string, string>)[section]} {...info} /><section className="container inner-content">{info.kind === "package" && <PackageOverview packages={offerings} />}{info.kind === "show" && <div className="show-catalog-note"><strong>Соберите праздник вокруг любимого героя</strong><p>Выберите анимацию или добавьте к ней шоу, фотосъёмку и звук. Выбранная услуга уже будет отмечена в конструкторе — её можно убрать или дополнить другими. Итоговую стоимость покажем в форме.</p></div>}<div className={info.kind === "package" ? "package-grid inner-packages" : "offering-grid"}>{offerings.map((item, index) => info.kind === "package" ? <PackageCard headingLevel={2} offerings={allOfferings} key={item.slug} offering={item} featured={item.slug === "full-party"} /> : section === "shows" && item.kind !== "show" ? <ServiceCard key={item.slug} offering={item} transformers={transformers} /> : <OfferingCard key={item.slug} offering={item} aboveFold={section === "transformers" && index === 0} />)}</div>{info.kind === "package" && <PackageComparison packages={offerings} />}</section>
-    {section === "transformers" && <TransformerReview storyKey="yard-party" />}
+    {section === "transformers" && <><TransformerVideo /><TransformerReview storyKey="yard-party" /></>}
     {(section === "transformers" || section === "packages") && <ProgramQuestions program={section} />}</main>;
 }
